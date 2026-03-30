@@ -26,6 +26,16 @@ export default function LiveClasses({ adminKey, onEnterRoom }) {
     finally { setLoading(false) }
   }
 
+  function extractYouTubeId(input) {
+    // Accept full URL or bare ID
+    try {
+      const url = new URL(input)
+      return url.searchParams.get('v') || url.pathname.split('/').pop()
+    } catch {
+      return input.trim() // already a bare ID
+    }
+  }
+
   async function handleCreate(e) {
     e.preventDefault()
     setFormError('')
@@ -33,9 +43,11 @@ export default function LiveClasses({ adminKey, onEnterRoom }) {
       setFormError('Please fill all required fields')
       return
     }
+    const youtubeVideoId = extractYouTubeId(form.youtubeVideoId)
+    if (!youtubeVideoId) { setFormError('Invalid YouTube URL or ID'); return }
     setSubmitting(true)
     try {
-      const data = await createLiveClass(adminKey, { ...form, duration: parseInt(form.duration) })
+      const data = await createLiveClass(adminKey, { ...form, youtubeVideoId, duration: parseInt(form.duration) })
       setShowModal(false)
       setForm(EMPTY)
       onEnterRoom(data.class)
@@ -133,7 +145,7 @@ export default function LiveClasses({ adminKey, onEnterRoom }) {
               </div>
               <div className="form-group">
                 <label>YouTube Video ID *</label>
-                <input value={form.youtubeVideoId} onChange={e => setForm(f => ({ ...f, youtubeVideoId: e.target.value }))} placeholder="e.g. dQw4w9WgXcQ (from youtube.com/watch?v=...)" />
+                <input value={form.youtubeVideoId} onChange={e => setForm(f => ({ ...f, youtubeVideoId: e.target.value }))} placeholder="Paste full URL or just the video ID" />
               </div>
               <div className="form-group">
                 <label>Description</label>
