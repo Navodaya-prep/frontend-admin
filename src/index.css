@@ -193,6 +193,22 @@ body {
 }
 .badge-gold { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
 
+/* Tabs */
+.tab-nav { display: flex; gap: 4px; }
+.tab-btn { padding: 6px 14px; border-radius: 6px; border: none; background: transparent; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--muted); }
+.tab-btn.active { background: var(--primary); color: #fff; }
+.tab-btn:hover:not(.active) { background: var(--bg); }
+
+/* Room grid */
+.room-grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .room-grid { grid-template-columns: 1fr; } }
+
+/* Extra badges/buttons */
+.badge-live { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+.badge-success { background: #f0fdf4; border-color: #86efac; color: #166534; }
+.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn-danger:hover { background: #b91c1c; border-color: #b91c1c; }
+
 /* Misc */
 .empty-state { text-align: center; padding: 48px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
 .muted { color: var(--muted); }
