@@ -5,7 +5,7 @@ const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi'
 const CLASS_LEVELS = ['6', '7', '8', '9', 'both']
 const EMPTY = { title: '', subject: '', teacherName: '', description: '', youtubeVideoId: '', classLevel: '6', duration: 60, isPremium: false }
 
-export default function LiveClasses({ adminKey, onEnterRoom }) {
+export default function LiveClasses({ adminToken, onEnterRoom }) {
   const [classes, setClasses] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -20,7 +20,7 @@ export default function LiveClasses({ adminKey, onEnterRoom }) {
     setLoading(true)
     setError('')
     try {
-      const data = await listLiveClasses(adminKey)
+      const data = await listLiveClasses(adminToken)
       setClasses(data.classes || [])
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
@@ -47,7 +47,7 @@ export default function LiveClasses({ adminKey, onEnterRoom }) {
     if (!youtubeVideoId) { setFormError('Invalid YouTube URL or ID'); return }
     setSubmitting(true)
     try {
-      const data = await createLiveClass(adminKey, { ...form, youtubeVideoId, duration: parseInt(form.duration) })
+      const data = await createLiveClass(adminToken, { ...form, youtubeVideoId, duration: parseInt(form.duration) })
       setShowModal(false)
       setForm(EMPTY)
       onEnterRoom(data.class)
@@ -58,7 +58,7 @@ export default function LiveClasses({ adminKey, onEnterRoom }) {
   async function handleEnd(cls) {
     if (!confirm(`End "${cls.title}"?`)) return
     try {
-      await endLiveClass(adminKey, cls.id)
+      await endLiveClass(adminToken, cls.id)
       fetch()
     } catch (e) { alert(e.message) }
   }

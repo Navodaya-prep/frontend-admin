@@ -4,26 +4,61 @@ import Dashboard from './components/Dashboard.jsx'
 import MockTestDetail from './components/MockTestDetail.jsx'
 import LiveClasses from './components/LiveClasses.jsx'
 import LiveClassRoom from './components/LiveClassRoom.jsx'
-
-const TABS = [
-  { id: 'mocktests', label: 'Mock Tests' },
-  { id: 'live', label: '🔴 Live Classes' },
-]
+import PracticeHub from './components/PracticeHub.jsx'
+import RecordedClasses from './components/RecordedClasses.jsx'
+import AdminProfile from './components/AdminProfile.jsx'
+import AdminManagement from './components/AdminManagement.jsx'
 
 export default function App() {
-  const [adminKey, setAdminKey] = useState(() => localStorage.getItem('adminKey') || '')
+  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken') || '')
+  const [adminInfo, setAdminInfo] = useState(() => {
+    const stored = localStorage.getItem('adminInfo')
+    return stored ? JSON.parse(stored) : null
+  })
   const [tab, setTab] = useState('mocktests')
   const [view, setView] = useState('list') // 'list' | 'detail'
   const [selectedTest, setSelectedTest] = useState(null)
   const [selectedClass, setSelectedClass] = useState(null)
 
+  const TABS = [
+    { id: 'recorded', label: '🎥 Recorded Classes' },
+    { id: 'practice', label: '📋 Practice Hub' },
+    { id: 'mocktests', label: 'Mock Tests' },
+    { id: 'live', label: '🔴 Live Classes' },
+    ...(adminInfo?.isSuperAdmin ? [{ id: 'admins', label: '👥 Admin Management' }] : [])
+  ]
+
   useEffect(() => {
-    if (adminKey) localStorage.setItem('adminKey', adminKey)
-  }, [adminKey])
+    if (adminToken) {
+      localStorage.setItem('adminToken', adminToken)
+      // Load admin info if not already loaded
+      if (!adminInfo) {
+        loadAdminInfo()
+      }
+    }
+  }, [adminToken])
+
+  async function loadAdminInfo() {
+    try {
+      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const res = await fetch(`${API_URL}/admin/auth/profile`, {
+        headers: { 'Authorization': `Bearer ${adminToken}` }
+      })
+      const json = await res.json()
+      if (json.success) {
+        setAdminInfo(json.data.admin)
+        localStorage.setItem('adminInfo', JSON.stringify(json.data.admin))
+      }
+    } catch (err) {
+      console.error('Failed to load admin info:', err)
+    }
+  }
 
   function handleLogout() {
-    localStorage.removeItem('adminKey')
-    setAdminKey('')
+    localStorage.removeItem('adminToken')
+    localStorage.removeItem('adminInfo')
+    setAdminToken('')
+    setAdminInfo(null)
   }
 
   function handleBack() {
@@ -32,7 +67,7 @@ export default function App() {
     setSelectedClass(null)
   }
 
-  if (!adminKey) return <Login onLogin={setAdminKey} />
+  if (!adminToken) return <Login onLogin={setAdminToken} />
 
   return (
     <div className="app">
@@ -51,22 +86,39 @@ export default function App() {
             ))}
           </nav>
         </div>
-        <button className="btn btn-outline" onClick={handleLogout}>Logout</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {adminInfo && (
+            <button
+              className="btn btn-outline"
+              onClick={() => { setTab('profile'); setView('list'); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              <span style={{ fontSize: 18 }}>👤</span>
+              <span>{adminInfo.firstName} {adminInfo.lastName}</span>
+              {adminInfo.isSuperAdmin && <span style={{ fontSize: 14 }}>👑</span>}
+            </button>
+          )}
+          <button className="btn btn-outline" onClick={handleLogout}>Logout</button>
+        </div>
       </header>
 
       <main className="main">
+        {tab === 'recorded' && <RecordedClasses adminToken={adminToken} />}
+        {tab === 'practice' && <PracticeHub adminToken={adminToken} />}
         {tab === 'mocktests' && view === 'list' && (
-          <Dashboard adminKey={adminKey} onSelectTest={t => { setSelectedTest(t); setView('detail') }} />
+          <Dashboard adminToken={adminToken} onSelectTest={t => { setSelectedTest(t); setView('detail') }} />
         )}
         {tab === 'mocktests' && view === 'detail' && selectedTest && (
-          <MockTestDetail adminKey={adminKey} test={selectedTest} onBack={handleBack} />
+          <MockTestDetail adminToken={adminToken} test={selectedTest} onBack={handleBack} />
         )}
         {tab === 'live' && view === 'list' && (
-          <LiveClasses adminKey={adminKey} onEnterRoom={c => { setSelectedClass(c); setView('detail') }} />
+          <LiveClasses adminToken={adminToken} onEnterRoom={c => { setSelectedClass(c); setView('detail') }} />
         )}
         {tab === 'live' && view === 'detail' && selectedClass && (
-          <LiveClassRoom adminKey={adminKey} liveClass={selectedClass} onBack={handleBack} />
+          <LiveClassRoom adminToken={adminToken} liveClass={selectedClass} onBack={handleBack} />
         )}
+        {tab === 'admins' && adminInfo?.isSuperAdmin && <AdminManagement adminToken={adminToken} />}
+        {tab === 'profile' && <AdminProfile adminToken={adminToken} onUpdate={loadAdminInfo} />}
       </main>
     </div>
   )

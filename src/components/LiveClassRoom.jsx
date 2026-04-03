@@ -3,7 +3,7 @@ import { WS_BASE, pushLiveQuestion, endLiveQuestion } from '../api.js'
 
 const EMPTY_Q = { text: '', options: ['', '', '', ''], correctIndex: 0, isReadOnly: false, timerSeconds: 30 }
 
-export default function LiveClassRoom({ adminKey, liveClass, onBack }) {
+export default function LiveClassRoom({ adminToken, liveClass, onBack }) {
   const [messages, setMessages] = useState([])
   const [connected, setConnected] = useState(false)
   const [studentCount, setStudentCount] = useState(0)
@@ -17,7 +17,7 @@ export default function LiveClassRoom({ adminKey, liveClass, onBack }) {
   const chatEndRef = useRef(null)
 
   const connect = useCallback(() => {
-    const url = `${WS_BASE}/ws/live/${liveClass.id}?adminKey=${encodeURIComponent(adminKey)}&name=${encodeURIComponent(liveClass.teacherName)}`
+    const url = `${WS_BASE}/ws/live/${liveClass.id}?adminToken=${encodeURIComponent(adminToken)}&name=${encodeURIComponent(liveClass.teacherName)}`
     const socket = new WebSocket(url)
 
     socket.onopen = () => setConnected(true)
@@ -31,7 +31,7 @@ export default function LiveClassRoom({ adminKey, liveClass, onBack }) {
       handleServerEvent(msg)
     }
     wsRef.current = socket
-  }, [adminKey, liveClass])
+  }, [adminToken, liveClass])
 
   useEffect(() => {
     connect()
@@ -74,7 +74,7 @@ export default function LiveClassRoom({ adminKey, liveClass, onBack }) {
     if (!form.isReadOnly && form.options.some(o => !o.trim())) { setFormError('All options required'); return }
     setSubmitting(true)
     try {
-      await pushLiveQuestion(adminKey, liveClass.id, {
+      await pushLiveQuestion(adminToken, liveClass.id, {
         text: form.text,
         options: form.isReadOnly ? [] : form.options,
         correctIndex: parseInt(form.correctIndex),
@@ -90,7 +90,7 @@ export default function LiveClassRoom({ adminKey, liveClass, onBack }) {
   async function handleEndQuestion() {
     if (!activeQuestion) return
     try {
-      await endLiveQuestion(adminKey, liveClass.id, activeQuestion.questionId)
+      await endLiveQuestion(adminToken, liveClass.id, activeQuestion.questionId)
     } catch (e) { alert(e.message) }
   }
 
