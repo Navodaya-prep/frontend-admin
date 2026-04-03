@@ -8,6 +8,8 @@ import PracticeHub from './components/PracticeHub.jsx'
 import RecordedClasses from './components/RecordedClasses.jsx'
 import AdminProfile from './components/AdminProfile.jsx'
 import AdminManagement from './components/AdminManagement.jsx'
+import Settings from './components/Settings.jsx'
+import DailyChallenge from './components/DailyChallenge.jsx'
 
 export default function App() {
   const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken') || '')
@@ -25,6 +27,8 @@ export default function App() {
     { id: 'practice', label: '📋 Practice Hub' },
     { id: 'mocktests', label: 'Mock Tests' },
     { id: 'live', label: '🔴 Live Classes' },
+    ...(adminInfo?.isSuperAdmin ? [{ id: 'daily', label: '⚡ Daily Challenge' }] : []),
+    { id: 'settings', label: '⚙️ Settings' },
     ...(adminInfo?.isSuperAdmin ? [{ id: 'admins', label: '👥 Admin Management' }] : [])
   ]
 
@@ -117,6 +121,8 @@ export default function App() {
         {tab === 'live' && view === 'detail' && selectedClass && (
           <LiveClassRoom adminToken={adminToken} liveClass={selectedClass} onBack={handleBack} />
         )}
+        {tab === 'settings' && <Settings adminToken={adminToken} isSuperAdmin={adminInfo?.isSuperAdmin} />}
+        {tab === 'daily' && adminInfo?.isSuperAdmin && <DailyChallenge adminToken={adminToken} />}
         {tab === 'admins' && adminInfo?.isSuperAdmin && <AdminManagement adminToken={adminToken} />}
         {tab === 'profile' && <AdminProfile adminToken={adminToken} onUpdate={loadAdminInfo} />}
       </main>

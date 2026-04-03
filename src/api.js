@@ -97,3 +97,13 @@ export const listLessons = (token, chapterId) => request('GET', `/chapters/${cha
 export const createLesson = (token, chapterId, body) => request('POST', `/chapters/${chapterId}/lessons`, token, body)
 export const updateLesson = (token, id, body) => request('PUT', `/lessons/${id}`, token, body)
 export const deleteLesson = (token, id) => request('DELETE', `/lessons/${id}`, token)
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+export const getSettings = (token) => request('GET', '/settings', token).then((d) => d.settings)
+export const updateSettings = (token, body) => request('PUT', '/settings', token, body)
+
+// ── Daily Challenge ───────────────────────────────────────────────────────────
+export const listChallenges = (token) => request('GET', '/daily-challenge', token).then((d) => d.challenges)
+export const createChallenge = (token, body) => request('POST', '/daily-challenge', token, body)
+export const updateChallenge = (token, id, body) => request('PUT', `/daily-challenge/${id}`, token, body)
+export const deleteChallenge = (token, id) => request('DELETE', `/daily-challenge/${id}`, token)

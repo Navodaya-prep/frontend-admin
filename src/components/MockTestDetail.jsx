@@ -14,6 +14,8 @@ const EMPTY_Q = {
   difficulty: 'medium',
   classLevel: '6',
   isPremium: false,
+  isPYQ: false,
+  examYear: '',
   tags: '',
 }
 
@@ -78,6 +80,8 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
         difficulty: form.difficulty,
         classLevel: form.classLevel,
         isPremium: form.isPremium,
+        isPYQ: form.isPYQ,
+        examYear: form.examYear,
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
       }
 
@@ -126,6 +130,8 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
       difficulty: q.difficulty || 'medium',
       classLevel: q.classLevel || '6',
       isPremium: q.isPremium || false,
+      isPYQ: q.isPYQ || false,
+      examYear: q.examYear || '',
       tags: (q.tags || []).join(', '),
     })
     setShowForm(true)
@@ -449,6 +455,45 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
                   <span>Premium only</span>
                 </label>
               </div>
+            </div>
+
+            {/* PYQ Section */}
+            <div style={{
+              background: '#f8f9fa',
+              padding: 16,
+              borderRadius: 8,
+              border: '1px solid #e1e4e8'
+            }}>
+              <div style={{ marginBottom: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.isPYQ}
+                    onChange={e => setForm(f => ({ ...f, isPYQ: e.target.checked, examYear: e.target.checked ? f.examYear : '' }))}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <span style={{ fontWeight: 600, fontSize: 14 }}>Previous Year Question (PYQ)</span>
+                </label>
+                <p style={{ fontSize: 12, color: '#6c757d', marginTop: 4, marginLeft: 24 }}>
+                  Mark this question if it appeared in an actual JNVST exam
+                </p>
+              </div>
+              {form.isPYQ && (
+                <div className="form-group" style={{ marginTop: 12, marginBottom: 0 }}>
+                  <label className="form-label">Exam Year *</label>
+                  <select
+                    className="input"
+                    value={form.examYear}
+                    onChange={e => setForm(f => ({ ...f, examYear: e.target.value }))}
+                    required={form.isPYQ}
+                  >
+                    <option value="">Select exam year</option>
+                    {Array.from({ length: 11 }, (_, i) => 2025 - i).map(year => (
+                      <option key={year} value={String(year)}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {formError && (

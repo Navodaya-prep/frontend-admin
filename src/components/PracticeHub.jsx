@@ -134,6 +134,7 @@ function QuestionModal({ initial, onSave, onClose }) {
     text: '', options: ['', '', '', ''],
     correctIndex: 0, explanation: '',
     difficulty: 'medium', classLevel: '', tags: '', isPremium: false,
+    isPYQ: false, examYear: '',
   }
   const [form, setForm] = useState(initial
     ? { ...initial, tags: (initial.tags || []).join(', ') }
@@ -231,6 +232,36 @@ function QuestionModal({ initial, onSave, onClose }) {
         <input className="input" value={form.tags}
           onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
           placeholder="e.g., series, pattern, logical" />
+
+        <div style={{ marginTop: 16, padding: 16, background: 'var(--bg-light)', borderRadius: 8, border: '1px solid var(--border)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.isPYQ}
+              onChange={(e) => setForm((f) => ({ ...f, isPYQ: e.target.checked }))} 
+              style={{ width: 18, height: 18, cursor: 'pointer' }} />
+            <span style={{ fontWeight: 600, fontSize: 14 }}>📚 Previous Year Question (PYQ)</span>
+          </label>
+          
+          {form.isPYQ && (
+            <div style={{ marginTop: 8 }}>
+              <label className="form-label" style={{ fontSize: 13 }}>Exam Year</label>
+              <select className="input" value={form.examYear}
+                onChange={(e) => setForm((f) => ({ ...f, examYear: e.target.value }))}>
+                <option value="">Select Year</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <option value="2021">2021</option>
+                <option value="2020">2020</option>
+                <option value="2019">2019</option>
+                <option value="2018">2018</option>
+                <option value="2017">2017</option>
+                <option value="2016">2016</option>
+                <option value="2015">2015</option>
+              </select>
+            </div>
+          )}
+        </div>
 
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, cursor: 'pointer' }}>
           <input type="checkbox" checked={form.isPremium}
