@@ -74,6 +74,7 @@ export function getImageUrl(path) {
 // ── Mock Tests ────────────────────────────────────────────────────────────────
 export const listMockTests = (token) => request('GET', '/mocktests', token)
 export const createMockTest = (token, body) => request('POST', '/mocktests', token, body)
+export const updateMockTest = (token, testId, body) => request('PUT', `/mocktests/${testId}`, token, body)
 export const deleteMockTest = (token, testId) => request('DELETE', `/mocktests/${testId}`, token)
 export const listQuestions = (token, testId) => request('GET', `/mocktests/${testId}/questions`, token)
 export const addQuestion = (token, testId, body) => request('POST', `/mocktests/${testId}/questions`, token, body)
@@ -133,6 +134,13 @@ export const listChallenges = (token) => request('GET', '/daily-challenge', toke
 export const createChallenge = (token, body) => request('POST', '/daily-challenge', token, body)
 export const updateChallenge = (token, id, body) => request('PUT', `/daily-challenge/${id}`, token, body)
 export const deleteChallenge = (token, id) => request('DELETE', `/daily-challenge/${id}`, token)
+
+// ── Teacher Management ────────────────────────────────────────────────────────
+export const listTeachers = (token) => request('GET', '/manage/teachers', token)
+export const inviteTeacher = (token, body) => request('POST', '/manage/teachers/invite', token, body)
+export const updateTeacher = (token, id, body) => request('PUT', `/manage/teachers/${id}`, token, body)
+export const toggleTeacherStatus = (token, id) => request('PUT', `/manage/teachers/${id}/toggle`, token)
+export const deleteTeacher = (token, id) => request('DELETE', `/manage/teachers/${id}`, token)
 
 // ── Doubts ────────────────────────────────────────────────────────────────────
 export const listDoubts = (token, params = {}) => {

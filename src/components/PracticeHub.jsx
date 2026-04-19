@@ -6,6 +6,7 @@ import {
   updatePracticeQuestion, deletePracticeQuestion,
   uploadImage, getImageUrl,
 } from '../api'
+import DeleteIcon from './DeleteIcon.jsx'
 
 // ─── Difficulty badge ─────────────────────────────────────────────────────────
 const DIFF_STYLE = {
@@ -168,7 +169,7 @@ function ImageUploadButton({ adminToken, currentUrl, onUploaded, label = 'Upload
               fontSize: 12, cursor: 'pointer', display: 'flex',
               alignItems: 'center', justifyContent: 'center', fontWeight: 700,
             }}
-          >×</button>
+          ><DeleteIcon size={13} /></button>
         </div>
       )}
       <div>
@@ -1030,7 +1031,7 @@ export default function PracticeHub({ adminToken }) {
                 className="btn btn-danger btn-sm" 
                 onClick={(e) => { e.stopPropagation(); del.ask(s) }}
               >
-                ✕
+                <DeleteIcon size={16} />
               </button>
             </div>
           </div>
