@@ -1,6 +1,7 @@
-const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
 const BASE = `${API_URL}/admin`
 export const WS_BASE = API_URL.replace(/^http/, 'ws').replace('/api', '')
+export const UPLOADS_BASE = API_URL.replace('/api', '')
 
 function headers(token) {
   return { 
@@ -43,6 +44,31 @@ async function request(method, path, token, body) {
     console.error('API Request Error:', error)
     throw error
   }
+}
+
+// ── Image Upload ──────────────────────────────────────────────────────────────
+export async function uploadImage(token, file) {
+  const formData = new FormData()
+  formData.append('image', file)
+  const res = await fetch(`${BASE}/upload/image`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: formData,
+  })
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Upload failed: ${res.status} - ${text.substring(0, 100)}`)
+  }
+  const json = await res.json()
+  if (!json.success) throw new Error(json.message || 'Upload failed')
+  return json.data.url // returns relative URL like "/uploads/abc123.jpg"
+}
+
+// Build full URL for an uploaded image path
+export function getImageUrl(path) {
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  return `${UPLOADS_BASE}${path}`
 }
 
 // ── Mock Tests ────────────────────────────────────────────────────────────────
@@ -107,3 +133,13 @@ export const listChallenges = (token) => request('GET', '/daily-challenge', toke
 export const createChallenge = (token, body) => request('POST', '/daily-challenge', token, body)
 export const updateChallenge = (token, id, body) => request('PUT', `/daily-challenge/${id}`, token, body)
 export const deleteChallenge = (token, id) => request('DELETE', `/daily-challenge/${id}`, token)
+
+// ── Doubts ────────────────────────────────────────────────────────────────────
+export const listDoubts = (token, params = {}) => {
+  const qs = new URLSearchParams(params).toString()
+  return request('GET', `/doubts${qs ? '?' + qs : ''}`, token).then((d) => d.doubts)
+}
+export const getDoubtWithAnswers = (token, id) =>
+  request('GET', `/doubts/${id}/answers`, token)
+export const answerDoubt = (token, id, text) => request('POST', `/doubts/${id}/answers`, token, { text })
+export const deleteAdminDoubt = (token, id) => request('DELETE', `/doubts/${id}`, token)

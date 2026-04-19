@@ -10,6 +10,7 @@ import AdminProfile from './components/AdminProfile.jsx'
 import AdminManagement from './components/AdminManagement.jsx'
 import Settings from './components/Settings.jsx'
 import DailyChallenge from './components/DailyChallenge.jsx'
+import Doubts from './components/Doubts.jsx'
 
 export default function App() {
   const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken') || '')
@@ -27,6 +28,7 @@ export default function App() {
     { id: 'practice', label: '📋 Practice Hub' },
     { id: 'mocktests', label: 'Mock Tests' },
     { id: 'live', label: '🔴 Live Classes' },
+    { id: 'doubts', label: '💬 Doubts' },
     ...(adminInfo?.isSuperAdmin ? [{ id: 'daily', label: '⚡ Daily Challenge' }] : []),
     { id: 'settings', label: '⚙️ Settings' },
     ...(adminInfo?.isSuperAdmin ? [{ id: 'admins', label: '👥 Admin Management' }] : [])
@@ -121,6 +123,7 @@ export default function App() {
         {tab === 'live' && view === 'detail' && selectedClass && (
           <LiveClassRoom adminToken={adminToken} liveClass={selectedClass} onBack={handleBack} />
         )}
+        {tab === 'doubts' && <Doubts adminToken={adminToken} />}
         {tab === 'settings' && <Settings adminToken={adminToken} isSuperAdmin={adminInfo?.isSuperAdmin} />}
         {tab === 'daily' && adminInfo?.isSuperAdmin && <DailyChallenge adminToken={adminToken} />}
         {tab === 'admins' && adminInfo?.isSuperAdmin && <AdminManagement adminToken={adminToken} />}

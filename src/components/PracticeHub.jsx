@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   listSubjects, createSubject, updateSubject, deleteSubject,
   listChapters, createChapter, updateChapter, deleteChapter,
   listPracticeQuestions, createPracticeQuestion,
   updatePracticeQuestion, deletePracticeQuestion,
+  uploadImage, getImageUrl,
 } from '../api'
 
 // ─── Difficulty badge ─────────────────────────────────────────────────────────
@@ -127,24 +128,113 @@ function ChapterModal({ initial, onSave, onClose }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Question Modal
+// Image Upload Button (reusable)
 // ─────────────────────────────────────────────────────────────────────────────
-function QuestionModal({ initial, onSave, onClose }) {
+function ImageUploadButton({ adminToken, currentUrl, onUploaded, label = 'Upload Image' }) {
+  const fileRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadImage(adminToken, file)
+      onUploaded(url)
+    } catch (err) {
+      alert('Upload failed: ' + err.message)
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {currentUrl && (
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <img
+            src={getImageUrl(currentUrl)}
+            alt="Uploaded"
+            style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, border: '2px solid var(--border)', objectFit: 'contain', background: '#f9fafb' }}
+          />
+          <button
+            type="button"
+            onClick={() => onUploaded('')}
+            style={{
+              position: 'absolute', top: -8, right: -8,
+              width: 22, height: 22, borderRadius: '50%',
+              background: '#ef4444', color: 'white', border: 'none',
+              fontSize: 12, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+            }}
+          >×</button>
+        </div>
+      )}
+      <div>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleFile} style={{ display: 'none' }} />
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          style={{ fontSize: 13 }}
+        >
+          {uploading ? '⏳ Uploading...' : `📷 ${label}`}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Question Modal (with image support)
+// ─────────────────────────────────────────────────────────────────────────────
+function QuestionModal({ initial, onSave, onClose, adminToken }) {
   const empty = {
-    text: '', options: ['', '', '', ''],
+    text: '', imageUrl: '',
+    options: [
+      { type: 'text', value: '' },
+      { type: 'text', value: '' },
+      { type: 'text', value: '' },
+      { type: 'text', value: '' },
+    ],
     correctIndex: 0, explanation: '',
     difficulty: 'medium', classLevel: '', tags: '', isPremium: false,
     isPYQ: false, examYear: '',
   }
-  const [form, setForm] = useState(initial
-    ? { ...initial, tags: (initial.tags || []).join(', ') }
-    : empty
-  )
 
-  function setOpt(i, val) {
+  function parseInitial(init) {
+    if (!init) return empty
+    // Handle legacy string options (backward compat)
+    const options = (init.options || []).map((opt) => {
+      if (typeof opt === 'string') return { type: 'text', value: opt }
+      return { type: opt.type || 'text', value: opt.value || '' }
+    })
+    // Ensure at least 4 options
+    while (options.length < 4) options.push({ type: 'text', value: '' })
+    return {
+      ...init,
+      imageUrl: init.imageUrl || '',
+      options,
+      tags: Array.isArray(init.tags) ? init.tags.join(', ') : (init.tags || ''),
+    }
+  }
+
+  const [form, setForm] = useState(() => parseInitial(initial))
+
+  function setOptType(i, type) {
     setForm((f) => {
       const opts = [...f.options]
-      opts[i] = val
+      opts[i] = { ...opts[i], type, value: '' }
+      return { ...f, options: opts }
+    })
+  }
+
+  function setOptValue(i, value) {
+    setForm((f) => {
+      const opts = [...f.options]
+      opts[i] = { ...opts[i], value }
       return { ...f, options: opts }
     })
   }
@@ -158,44 +248,100 @@ function QuestionModal({ initial, onSave, onClose }) {
     onSave(payload)
   }
 
+  const optionLabels = ['A', 'B', 'C', 'D']
+  const allOptionsFilled = form.options.every((o) => o.value.trim() !== '')
+
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 600 }}>
+      <div className="modal" style={{ maxWidth: 660 }}>
         <h2>{initial ? 'Edit Question' : 'Add New Question'}</h2>
 
+        {/* Question Text */}
         <label className="form-label">Question Text *</label>
         <textarea className="input" rows={3} value={form.text}
           onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
           placeholder="Enter the question..." />
 
+        {/* Question Image (optional) */}
+        <div style={{ marginTop: 12 }}>
+          <label className="form-label" style={{ marginBottom: 8 }}>Question Image (optional)</label>
+          <ImageUploadButton
+            adminToken={adminToken}
+            currentUrl={form.imageUrl}
+            onUploaded={(url) => setForm((f) => ({ ...f, imageUrl: url }))}
+            label="Add Question Image"
+          />
+        </div>
+
+        {/* Answer Options */}
         <label className="form-label" style={{ marginTop: 16 }}>Answer Options</label>
-        <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>Select the correct answer by clicking the radio button</div>
+        <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 8 }}>
+          Each option can be text or image. Select the correct answer with the radio button.
+        </div>
         {form.options.map((opt, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <input 
-              type="radio" 
-              name="correct" 
+          <div key={i} style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 12,
+            padding: 12, borderRadius: 10,
+            background: Number(form.correctIndex) === i ? '#d1fae5' : 'var(--bg)',
+            border: Number(form.correctIndex) === i ? '2px solid var(--success)' : '2px solid var(--border)',
+          }}>
+            <input
+              type="radio"
+              name="correct"
               checked={Number(form.correctIndex) === i}
-              onChange={() => setForm((f) => ({ ...f, correctIndex: i }))} 
-              style={{ width: 18, height: 18, cursor: 'pointer' }}
+              onChange={() => setForm((f) => ({ ...f, correctIndex: i }))}
+              style={{ width: 18, height: 18, cursor: 'pointer', marginTop: 6 }}
             />
-            <span style={{ 
-              minWidth: 28, 
-              height: 28,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700, 
+            <span style={{
+              minWidth: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontSize: 14, borderRadius: 6, marginTop: 2,
               color: Number(form.correctIndex) === i ? 'var(--success)' : 'var(--muted)',
-              fontSize: 14,
-              background: Number(form.correctIndex) === i ? '#d1fae5' : 'var(--bg)',
-              borderRadius: 6,
+              background: Number(form.correctIndex) === i ? '#a7f3d0' : 'var(--surface)',
             }}>
-              {['A', 'B', 'C', 'D'][i]}
+              {optionLabels[i]}
             </span>
-            <input className="input" style={{ margin: 0, flex: 1 }} value={opt}
-              onChange={(e) => setOpt(i, e.target.value)}
-              placeholder={`Option ${['A', 'B', 'C', 'D'][i]}`} />
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {/* Type toggle */}
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button type="button"
+                  onClick={() => setOptType(i, 'text')}
+                  style={{
+                    padding: '3px 10px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
+                    border: opt.type === 'text' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    background: opt.type === 'text' ? '#dbeafe' : 'white',
+                    color: opt.type === 'text' ? 'var(--primary)' : 'var(--muted)',
+                    fontWeight: 600,
+                  }}>
+                  Aa Text
+                </button>
+                <button type="button"
+                  onClick={() => setOptType(i, 'image')}
+                  style={{
+                    padding: '3px 10px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
+                    border: opt.type === 'image' ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    background: opt.type === 'image' ? '#dbeafe' : 'white',
+                    color: opt.type === 'image' ? 'var(--primary)' : 'var(--muted)',
+                    fontWeight: 600,
+                  }}>
+                  🖼 Image
+                </button>
+              </div>
+
+              {/* Value input */}
+              {opt.type === 'text' ? (
+                <input className="input" style={{ margin: 0 }} value={opt.value}
+                  onChange={(e) => setOptValue(i, e.target.value)}
+                  placeholder={`Option ${optionLabels[i]}`} />
+              ) : (
+                <ImageUploadButton
+                  adminToken={adminToken}
+                  currentUrl={opt.value}
+                  onUploaded={(url) => setOptValue(i, url)}
+                  label={`Upload Option ${optionLabels[i]}`}
+                />
+              )}
+            </div>
           </div>
         ))}
 
@@ -273,7 +419,7 @@ function QuestionModal({ initial, onSave, onClose }) {
         <div className="modal-actions">
           <button className="btn btn-outline" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" onClick={handleSave}
-            disabled={!form.text.trim() || form.options.some((o) => !o.trim())}>
+            disabled={!form.text.trim() || !allOptionsFilled}>
             {initial ? 'Update Question' : 'Add Question'}
           </button>
         </div>
@@ -426,8 +572,17 @@ function QuestionsPanel({ adminToken, chapter }) {
                   {q.text}
                 </p>
                 
+                {q.imageUrl && (
+                  <div style={{ marginBottom: 12 }}>
+                    <img src={getImageUrl(q.imageUrl)} alt="Question" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, border: '1px solid var(--border)', objectFit: 'contain' }} />
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8, marginBottom: 10 }}>
-                  {q.options?.map((opt, oi) => (
+                  {q.options?.map((opt, oi) => {
+                    const optType = typeof opt === 'string' ? 'text' : (opt.type || 'text')
+                    const optValue = typeof opt === 'string' ? opt : (opt.value || '')
+                    return (
                     <div key={oi} style={{
                       fontSize: 13, 
                       padding: '8px 12px', 
@@ -437,7 +592,7 @@ function QuestionsPanel({ adminToken, chapter }) {
                       color: oi === q.correctIndex ? 'var(--success)' : 'var(--text)',
                       fontWeight: oi === q.correctIndex ? 600 : 400,
                       display: 'flex',
-                      alignItems: 'center',
+                      alignItems: optType === 'image' ? 'flex-start' : 'center',
                       gap: 8,
                     }}>
                       <span style={{ 
@@ -446,9 +601,14 @@ function QuestionsPanel({ adminToken, chapter }) {
                       }}>
                         {['A', 'B', 'C', 'D'][oi]}.
                       </span>
-                      <span>{opt}</span>
+                      {optType === 'image' ? (
+                        <img src={getImageUrl(optValue)} alt={`Option ${['A','B','C','D'][oi]}`} style={{ maxWidth: 140, maxHeight: 80, borderRadius: 4, objectFit: 'contain' }} />
+                      ) : (
+                        <span>{optValue}</span>
+                      )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 
                 {q.explanation && (
@@ -484,6 +644,7 @@ function QuestionsPanel({ adminToken, chapter }) {
           initial={modal === 'create' ? null : modal}
           onSave={handleSave}
           onClose={() => setModal(null)}
+          adminToken={adminToken}
         />
       )}
 

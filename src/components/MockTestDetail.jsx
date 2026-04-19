@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { listQuestions, addQuestion, updateQuestion, deleteQuestion, reorderQuestions } from '../api.js'
+import { useState, useEffect, useRef } from 'react'
+import { listQuestions, addQuestion, updateQuestion, deleteQuestion, reorderQuestions, uploadImage, getImageUrl } from '../api.js'
 
 const DIFFICULTIES = ['easy', 'medium', 'hard']
 const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge']
@@ -7,7 +7,13 @@ const CLASS_LEVELS = ['6', '7', '8', '9', 'both']
 
 const EMPTY_Q = {
   text: '',
-  options: ['', '', '', ''],
+  imageUrl: '',
+  options: [
+    { type: 'text', value: '' },
+    { type: 'text', value: '' },
+    { type: 'text', value: '' },
+    { type: 'text', value: '' },
+  ],
   correctIndex: 0,
   explanation: '',
   subject: '',
@@ -26,6 +32,64 @@ const getDifficultyColor = (difficulty) => {
     case 'hard': return { bg: '#fee2e2', color: '#991b1b', label: '🔥 Hard' }
     default: return { bg: '#f3f4f6', color: '#374151', label: difficulty }
   }
+}
+
+// ─── Image Upload Button ──────────────────────────────────────────────────────
+function MockTestImageUpload({ adminToken, currentUrl, onUploaded, label = 'Upload Image' }) {
+  const fileRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+
+  async function handleFile(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      const url = await uploadImage(adminToken, file)
+      onUploaded(url)
+    } catch (err) {
+      alert('Upload failed: ' + err.message)
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {currentUrl && (
+        <div style={{ position: 'relative', display: 'inline-block' }}>
+          <img
+            src={getImageUrl(currentUrl)}
+            alt="Uploaded"
+            style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, border: '2px solid var(--border)', objectFit: 'contain', background: '#f9fafb' }}
+          />
+          <button
+            type="button"
+            onClick={() => onUploaded('')}
+            style={{
+              position: 'absolute', top: -8, right: -8,
+              width: 22, height: 22, borderRadius: '50%',
+              background: '#ef4444', color: 'white', border: 'none',
+              fontSize: 12, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', fontWeight: 700,
+            }}
+          >×</button>
+        </div>
+      )}
+      <div>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" onChange={handleFile} style={{ display: 'none' }} />
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          style={{ fontSize: 13 }}
+        >
+          {uploading ? '⏳ Uploading...' : `📷 ${label}`}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export default function MockTestDetail({ adminToken, test, onBack }) {
@@ -58,7 +122,15 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
   function setOption(index, value) {
     setForm(f => {
       const options = [...f.options]
-      options[index] = value
+      options[index] = { ...options[index], value }
+      return { ...f, options }
+    })
+  }
+
+  function setOptionType(index, type) {
+    setForm(f => {
+      const options = [...f.options]
+      options[index] = { type, value: '' }
       return { ...f, options }
     })
   }
@@ -66,14 +138,15 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
   async function handleSubmit(e) {
     e.preventDefault()
     if (!form.text.trim()) { setFormError('Question text is required'); return }
-    if (form.options.some(o => !o.trim())) { setFormError('All 4 options are required'); return }
+    if (form.options.some(o => !o.value.trim())) { setFormError('All 4 options are required'); return }
     
     setSubmitting(true)
     setFormError('')
     try {
       const payload = {
         text: form.text,
-        options: form.options,
+        imageUrl: form.imageUrl || '',
+        options: form.options.map(o => ({ type: o.type || 'text', value: o.value })),
         correctIndex: parseInt(form.correctIndex),
         explanation: form.explanation,
         subject: form.subject,
@@ -121,9 +194,16 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
 
   function handleEdit(q) {
     setEditingQuestion(q)
+    // Handle both legacy string options and new {type, value} options
+    const options = (q.options || []).map(opt => {
+      if (typeof opt === 'string') return { type: 'text', value: opt }
+      return { type: opt.type || 'text', value: opt.value || '' }
+    })
+    while (options.length < 4) options.push({ type: 'text', value: '' })
     setForm({
       text: q.text,
-      options: [...q.options],
+      imageUrl: q.imageUrl || '',
+      options,
       correctIndex: q.correctIndex,
       explanation: q.explanation || '',
       subject: q.subject || '',
@@ -347,14 +427,32 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
               />
             </div>
 
+            {/* Question Image (optional) */}
+            <div className="form-group">
+              <label className="form-label">Question Image (optional)</label>
+              <MockTestImageUpload
+                adminToken={adminToken}
+                currentUrl={form.imageUrl}
+                onUploaded={(url) => setForm(f => ({ ...f, imageUrl: url }))}
+                label="Add Question Image"
+              />
+            </div>
+
             <div style={{ marginBottom: 24 }}>
-              <label style={{ fontWeight: 600, marginBottom: 12, display: 'block', fontSize: 14 }}>Options *</label>
+              <label style={{ fontWeight: 600, marginBottom: 8, display: 'block', fontSize: 14 }}>Options *</label>
+              <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 12 }}>
+                Each option can be text or image. Use the toggle to switch types.
+              </div>
               {form.options.map((opt, i) => (
                 <div key={i} style={{
                   display: 'flex',
                   gap: 12,
-                  marginBottom: 12,
-                  alignItems: 'center'
+                  marginBottom: 14,
+                  alignItems: 'flex-start',
+                  padding: 14,
+                  borderRadius: 10,
+                  background: form.correctIndex === i ? '#d1fae5' : 'var(--bg-light)',
+                  border: form.correctIndex === i ? '2px solid #10b981' : '2px solid var(--border)',
                 }}>
                   <span style={{
                     display: 'flex',
@@ -366,21 +464,56 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
                     color: form.correctIndex === i ? 'white' : 'var(--text)',
                     borderRadius: '50%',
                     fontWeight: 700,
-                    fontSize: 14
+                    fontSize: 14,
+                    flexShrink: 0,
                   }}>{i + 1}</span>
-                  <input
-                    className="input"
-                    value={opt}
-                    onChange={e => setOption(i, e.target.value)}
-                    placeholder={`Option ${i + 1}`}
-                    required
-                    style={{ flex: 1 }}
-                  />
+
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {/* Type toggle */}
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      <button type="button" onClick={() => setOptionType(i, 'text')}
+                        style={{
+                          padding: '3px 10px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
+                          border: (opt.type || 'text') === 'text' ? '2px solid #6366f1' : '1px solid var(--border)',
+                          background: (opt.type || 'text') === 'text' ? '#e0e7ff' : 'white',
+                          color: (opt.type || 'text') === 'text' ? '#6366f1' : 'var(--muted)',
+                          fontWeight: 600,
+                        }}>Aa Text</button>
+                      <button type="button" onClick={() => setOptionType(i, 'image')}
+                        style={{
+                          padding: '3px 10px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
+                          border: opt.type === 'image' ? '2px solid #6366f1' : '1px solid var(--border)',
+                          background: opt.type === 'image' ? '#e0e7ff' : 'white',
+                          color: opt.type === 'image' ? '#6366f1' : 'var(--muted)',
+                          fontWeight: 600,
+                        }}>🖼 Image</button>
+                    </div>
+
+                    {/* Value input */}
+                    {(opt.type || 'text') === 'text' ? (
+                      <input
+                        className="input"
+                        value={opt.value}
+                        onChange={e => setOption(i, e.target.value)}
+                        placeholder={`Option ${i + 1}`}
+                        required
+                        style={{ flex: 1, margin: 0 }}
+                      />
+                    ) : (
+                      <MockTestImageUpload
+                        adminToken={adminToken}
+                        currentUrl={opt.value}
+                        onUploaded={(url) => setOption(i, url)}
+                        label={`Upload Option ${i + 1}`}
+                      />
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     className={`btn ${form.correctIndex === i ? 'btn-success' : 'btn-outline'}`}
                     onClick={() => setForm(f => ({ ...f, correctIndex: i }))}
-                    style={{ minWidth: 120 }}
+                    style={{ minWidth: 120, flexShrink: 0, marginTop: 4 }}
                   >
                     {form.correctIndex === i ? '✓ Correct' : 'Mark Correct'}
                   </button>
@@ -633,6 +766,11 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
                       )}
                     </div>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 500, lineHeight: 1.6 }}>{q.text}</p>
+                    {q.imageUrl && (
+                      <div style={{ marginTop: 8 }}>
+                        <img src={getImageUrl(q.imageUrl)} alt="Question" style={{ maxWidth: '100%', maxHeight: 160, borderRadius: 8, border: '1px solid var(--border)', objectFit: 'contain' }} />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -654,7 +792,10 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
               </div>
 
               <div style={{ marginTop: 16, display: 'grid', gap: 8 }}>
-                {q.options.map((opt, idx) => (
+                {q.options.map((opt, idx) => {
+                  const optType = typeof opt === 'string' ? 'text' : (opt.type || 'text')
+                  const optValue = typeof opt === 'string' ? opt : (opt.value || '')
+                  return (
                   <div
                     key={idx}
                     style={{
@@ -663,7 +804,7 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
                       border: idx === q.correctIndex ? '2px solid #10b981' : '1px solid var(--border)',
                       borderRadius: 8,
                       display: 'flex',
-                      alignItems: 'center',
+                      alignItems: optType === 'image' ? 'flex-start' : 'center',
                       gap: 12
                     }}
                   >
@@ -677,16 +818,22 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
                       color: idx === q.correctIndex ? 'white' : 'var(--text)',
                       borderRadius: '50%',
                       fontWeight: 700,
-                      fontSize: 13
+                      fontSize: 13,
+                      flexShrink: 0,
                     }}>
                       {idx + 1}
                     </span>
-                    <span style={{ flex: 1, color: idx === q.correctIndex ? '#065f46' : 'var(--text)' }}>{opt}</span>
+                    {optType === 'image' ? (
+                      <img src={getImageUrl(optValue)} alt={`Option ${idx + 1}`} style={{ maxWidth: 160, maxHeight: 100, borderRadius: 4, objectFit: 'contain', flex: 1 }} />
+                    ) : (
+                      <span style={{ flex: 1, color: idx === q.correctIndex ? '#065f46' : 'var(--text)' }}>{optValue}</span>
+                    )}
                     {idx === q.correctIndex && (
-                      <span style={{ color: '#10b981', fontWeight: 700, fontSize: 14 }}>✓ Correct</span>
+                      <span style={{ color: '#10b981', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>✓ Correct</span>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
 
               {q.explanation && (
