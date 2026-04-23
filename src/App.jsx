@@ -8,6 +8,7 @@ import PracticeHub from './components/PracticeHub.jsx'
 import RecordedClasses from './components/RecordedClasses.jsx'
 import AdminProfile from './components/AdminProfile.jsx'
 import AdminManagement from './components/AdminManagement.jsx'
+import ManageTeachers from './components/ManageTeachers.jsx'
 import Settings from './components/Settings.jsx'
 import DailyChallenge from './components/DailyChallenge.jsx'
 import Doubts from './components/Doubts.jsx'
@@ -31,7 +32,10 @@ export default function App() {
     { id: 'doubts', label: '💬 Doubts' },
     ...(adminInfo?.isSuperAdmin ? [{ id: 'daily', label: '⚡ Daily Challenge' }] : []),
     { id: 'settings', label: '⚙️ Settings' },
-    ...(adminInfo?.isSuperAdmin ? [{ id: 'admins', label: '👥 Admin Management' }] : [])
+    ...(adminInfo?.isSuperAdmin ? [
+      { id: 'teachers', label: '👨‍🏫 Manage Teachers' },
+      { id: 'admins', label: '👥 Admin Management' },
+    ] : [])
   ]
 
   useEffect(() => {
@@ -126,6 +130,7 @@ export default function App() {
         {tab === 'doubts' && <Doubts adminToken={adminToken} />}
         {tab === 'settings' && <Settings adminToken={adminToken} isSuperAdmin={adminInfo?.isSuperAdmin} />}
         {tab === 'daily' && adminInfo?.isSuperAdmin && <DailyChallenge adminToken={adminToken} />}
+        {tab === 'teachers' && adminInfo?.isSuperAdmin && <ManageTeachers adminToken={adminToken} />}
         {tab === 'admins' && adminInfo?.isSuperAdmin && <AdminManagement adminToken={adminToken} />}
         {tab === 'profile' && <AdminProfile adminToken={adminToken} onUpdate={loadAdminInfo} />}
       </main>

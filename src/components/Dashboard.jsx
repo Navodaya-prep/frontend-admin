@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { listMockTests, createMockTest, deleteMockTest } from '../api.js'
+import { listMockTests, createMockTest, updateMockTest, deleteMockTest } from '../api.js'
+import DeleteIcon from './DeleteIcon.jsx'
 
 const CLASS_LEVELS = ['6', '7', '8', '9', 'both']
 const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge']
@@ -11,6 +12,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [editingTest, setEditingTest] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
@@ -33,7 +35,28 @@ export default function Dashboard({ adminToken, onSelectTest }) {
     }
   }
 
-  async function handleCreate(e) {
+  function openCreateModal() {
+    setEditingTest(null)
+    setForm(EMPTY_FORM)
+    setFormError('')
+    setShowModal(true)
+  }
+
+  function openEditModal(test, e) {
+    e.stopPropagation()
+    setEditingTest(test)
+    setForm({
+      title: test.title,
+      subject: test.subject,
+      duration: String(test.duration),
+      classLevel: test.classLevel,
+      isPremium: !!test.isPremium,
+    })
+    setFormError('')
+    setShowModal(true)
+  }
+
+  async function handleSubmitForm(e) {
     e.preventDefault()
     if (!form.title || !form.subject || !form.duration) {
       setFormError('All fields are required')
@@ -42,16 +65,23 @@ export default function Dashboard({ adminToken, onSelectTest }) {
     setSubmitting(true)
     setFormError('')
     try {
-      await createMockTest(adminToken, {
+      const payload = {
         title: form.title,
         subject: form.subject,
         duration: parseInt(form.duration),
         classLevel: form.classLevel,
         isPremium: form.isPremium,
-      })
+      }
+      if (editingTest) {
+        await updateMockTest(adminToken, editingTest._id, payload)
+        setSuccess('Mock test updated successfully!')
+      } else {
+        await createMockTest(adminToken, payload)
+        setSuccess('Mock test created successfully!')
+      }
       setShowModal(false)
       setForm(EMPTY_FORM)
-      setSuccess('Mock test created successfully!')
+      setEditingTest(null)
       setTimeout(() => setSuccess(''), 3000)
       fetchTests()
     } catch (e) {
@@ -90,7 +120,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
             <h1 style={{ margin: '0 0 8px 0', fontSize: 32 }}>Mock Tests</h1>
             <p style={{ margin: 0, color: 'var(--muted)' }}>Create and manage mock tests for students</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn-primary" onClick={openCreateModal}>
             + Create Mock Test
           </button>
         </div>
@@ -189,7 +219,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
             }
           </p>
           {tests.length === 0 && (
-            <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+            <button className="btn btn-primary" onClick={openCreateModal}>
               + Create Mock Test
             </button>
           )}
@@ -295,13 +325,21 @@ export default function Dashboard({ adminToken, onSelectTest }) {
                 </button>
                 <button
                   className="btn btn-outline"
-                  style={{ padding: '8px 16px', fontSize: 14 }}
+                  style={{ padding: '8px 14px', fontSize: 13 }}
+                  onClick={(e) => openEditModal(test, e)}
+                  title="Edit test details"
+                >
+                  ✏️ Edit
+                </button>
+                <button
+                  className="btn btn-outline"
+                  style={{ padding: '8px 12px', fontSize: 14 }}
                   onClick={(e) => {
                     e.stopPropagation()
                     handleDelete(test)
                   }}
                 >
-                  🗑️
+                  <DeleteIcon size={18} />
                 </button>
               </div>
             </div>
@@ -313,11 +351,11 @@ export default function Dashboard({ adminToken, onSelectTest }) {
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal-content" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h2 style={{ margin: 0 }}>Create Mock Test</h2>
+              <h2 style={{ margin: 0 }}>{editingTest ? 'Edit Mock Test' : 'Create Mock Test'}</h2>
               <button onClick={() => setShowModal(false)} className="btn btn-outline" style={{ padding: '4px 12px' }}>✕</button>
             </div>
-            
-            <form onSubmit={handleCreate}>
+
+            <form onSubmit={handleSubmitForm}>
               <div className="form-group">
                 <label className="form-label">Test Title</label>
                 <input
@@ -391,7 +429,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary" disabled={submitting} style={{ flex: 1 }}>
-                  {submitting ? 'Creating...' : 'Create Mock Test'}
+                  {submitting ? (editingTest ? 'Saving...' : 'Creating...') : (editingTest ? 'Save Changes' : 'Create Mock Test')}
                 </button>
               </div>
             </form>

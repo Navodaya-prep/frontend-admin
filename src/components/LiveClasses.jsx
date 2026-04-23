@@ -3,7 +3,7 @@ import { listLiveClasses, createLiveClass, endLiveClass } from '../api.js'
 
 const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge', 'Mental Ability']
 const CLASS_LEVELS = ['6', '7', '8', '9', 'both']
-const EMPTY = { title: '', subject: '', teacherName: '', description: '', youtubeVideoId: '', classLevel: '6', duration: 60, isPremium: false }
+const EMPTY = { title: '', subject: '', teacherName: '', description: '', classLevel: '6', duration: 60, isPremium: false }
 
 export default function LiveClasses({ adminToken, onEnterRoom }) {
   const [classes, setClasses] = useState([])
@@ -26,28 +26,16 @@ export default function LiveClasses({ adminToken, onEnterRoom }) {
     finally { setLoading(false) }
   }
 
-  function extractYouTubeId(input) {
-    // Accept full URL or bare ID
-    try {
-      const url = new URL(input)
-      return url.searchParams.get('v') || url.pathname.split('/').pop()
-    } catch {
-      return input.trim() // already a bare ID
-    }
-  }
-
   async function handleCreate(e) {
     e.preventDefault()
     setFormError('')
-    if (!form.title || !form.subject || !form.teacherName || !form.youtubeVideoId) {
+    if (!form.title || !form.subject || !form.teacherName) {
       setFormError('Please fill all required fields')
       return
     }
-    const youtubeVideoId = extractYouTubeId(form.youtubeVideoId)
-    if (!youtubeVideoId) { setFormError('Invalid YouTube URL or ID'); return }
     setSubmitting(true)
     try {
-      const data = await createLiveClass(adminToken, { ...form, youtubeVideoId, duration: parseInt(form.duration) })
+      const data = await createLiveClass(adminToken, { ...form, duration: parseInt(form.duration) })
       setShowModal(false)
       setForm(EMPTY)
       onEnterRoom(data.class)
@@ -142,10 +130,6 @@ export default function LiveClasses({ adminToken, onEnterRoom }) {
                   <label>Duration (min)</label>
                   <input type="number" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} min="1" />
                 </div>
-              </div>
-              <div className="form-group">
-                <label>YouTube Video ID *</label>
-                <input value={form.youtubeVideoId} onChange={e => setForm(f => ({ ...f, youtubeVideoId: e.target.value }))} placeholder="Paste full URL or just the video ID" />
               </div>
               <div className="form-group">
                 <label>Description</label>

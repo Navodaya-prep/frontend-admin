@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import DeleteIcon from './DeleteIcon.jsx'
 
 export default function AdminManagement({ adminToken }) {
   const [admins, setAdmins] = useState([])
@@ -189,7 +190,7 @@ export default function AdminManagement({ adminToken }) {
                       style={{ padding: '4px 12px', fontSize: 13 }}
                       onClick={() => handleDelete(admin.id, `${admin.firstName} ${admin.lastName}`)}
                     >
-                      🗑️ Delete
+                      <DeleteIcon size={16} /> Delete
                     </button>
                   </td>
                 </tr>

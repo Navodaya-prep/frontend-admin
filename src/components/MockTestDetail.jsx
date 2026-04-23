@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { listQuestions, addQuestion, updateQuestion, deleteQuestion, reorderQuestions, uploadImage, getImageUrl } from '../api.js'
+import DeleteIcon from './DeleteIcon.jsx'
 
 const DIFFICULTIES = ['easy', 'medium', 'hard']
 const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge']
@@ -73,7 +74,7 @@ function MockTestImageUpload({ adminToken, currentUrl, onUploaded, label = 'Uplo
               fontSize: 12, cursor: 'pointer', display: 'flex',
               alignItems: 'center', justifyContent: 'center', fontWeight: 700,
             }}
-          >×</button>
+          ><DeleteIcon size={13} /></button>
         </div>
       )}
       <div>
@@ -786,7 +787,7 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
                     style={{ padding: '8px 16px', fontSize: 14 }}
                     onClick={() => handleDelete(q)}
                   >
-                    🗑️ Delete
+                    <DeleteIcon size={16} /> Delete
                   </button>
                 </div>
               </div>

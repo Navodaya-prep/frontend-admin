@@ -4,6 +4,7 @@ import {
   listAdminChapters, createCourseChapter, updateChapter, deleteChapter,
   listLessons, createLesson, updateLesson, deleteLesson,
 } from '../api'
+import DeleteIcon from './DeleteIcon.jsx'
 
 // ─── Type badge ───────────────────────────────────────────────────────────────
 function TypeBadge({ type }) {
@@ -504,7 +505,7 @@ export default function RecordedClasses({ adminToken }) {
                   <button className="btn btn-outline" style={{ padding: '6px 12px', fontSize: 12 }}
                     onClick={() => setModal(c)}>Edit</button>
                   <button className="btn btn-danger" style={{ padding: '6px 12px', fontSize: 12 }}
-                    onClick={() => del.ask(c)}>✕</button>
+                    onClick={() => del.ask(c)}><DeleteIcon size={16} /></button>
                 </div>
               </div>
             </div>

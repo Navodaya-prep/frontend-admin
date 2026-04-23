@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { listDoubts, getDoubtWithAnswers, answerDoubt, deleteAdminDoubt } from '../api'
+import DeleteIcon from './DeleteIcon.jsx'
 
 const SUBJECT_FILTERS = [
   { label: 'All', value: '' },
@@ -168,7 +169,7 @@ export default function Doubts({ adminToken }) {
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: 14, padding: 2 }}
                       title="Delete doubt"
                     >
-                      🗑
+                      <DeleteIcon size={16} />
                     </button>
                   </div>
                 </div>

@@ -6,6 +6,7 @@ import {
   updatePracticeQuestion, deletePracticeQuestion,
   uploadImage, getImageUrl,
 } from '../api'
+import DeleteIcon from './DeleteIcon.jsx'
 
 // ─── Difficulty badge ─────────────────────────────────────────────────────────
 const DIFF_STYLE = {
@@ -168,7 +169,7 @@ function ImageUploadButton({ adminToken, currentUrl, onUploaded, label = 'Upload
               fontSize: 12, cursor: 'pointer', display: 'flex',
               alignItems: 'center', justifyContent: 'center', fontWeight: 700,
             }}
-          >×</button>
+          ><DeleteIcon size={13} /></button>
         </div>
       )}
       <div>
@@ -192,7 +193,7 @@ function ImageUploadButton({ adminToken, currentUrl, onUploaded, label = 'Upload
 // ─────────────────────────────────────────────────────────────────────────────
 function QuestionModal({ initial, onSave, onClose, adminToken }) {
   const empty = {
-    text: '', imageUrl: '',
+    text: '', textHi: '', imageUrl: '',
     options: [
       { type: 'text', value: '' },
       { type: 'text', value: '' },
@@ -215,6 +216,7 @@ function QuestionModal({ initial, onSave, onClose, adminToken }) {
     while (options.length < 4) options.push({ type: 'text', value: '' })
     return {
       ...init,
+      textHi: init.textHi || '',
       imageUrl: init.imageUrl || '',
       options,
       tags: Array.isArray(init.tags) ? init.tags.join(', ') : (init.tags || ''),
@@ -257,10 +259,16 @@ function QuestionModal({ initial, onSave, onClose, adminToken }) {
         <h2>{initial ? 'Edit Question' : 'Add New Question'}</h2>
 
         {/* Question Text */}
-        <label className="form-label">Question Text *</label>
+        <label className="form-label">Question Text (English) *</label>
         <textarea className="input" rows={3} value={form.text}
           onChange={(e) => setForm((f) => ({ ...f, text: e.target.value }))}
-          placeholder="Enter the question..." />
+          placeholder="Enter the question in English..." />
+
+        <label className="form-label" style={{ marginTop: 12 }}>Question Text (Hindi — optional)</label>
+        <textarea className="input" rows={3} value={form.textHi}
+          onChange={(e) => setForm((f) => ({ ...f, textHi: e.target.value }))}
+          placeholder="प्रश्न हिंदी में दर्ज करें..."
+          style={{ fontFamily: 'inherit' }} />
 
         {/* Question Image (optional) */}
         <div style={{ marginTop: 12 }}>
@@ -568,9 +576,14 @@ function QuestionsPanel({ adminToken, chapter }) {
                   )}
                 </div>
                 
-                <p style={{ margin: '0 0 12px', fontSize: 15, color: 'var(--text)', lineHeight: 1.6, fontWeight: 500 }}>
+                <p style={{ margin: '0 0 4px', fontSize: 15, color: 'var(--text)', lineHeight: 1.6, fontWeight: 500, whiteSpace: 'pre-wrap' }}>
                   {q.text}
                 </p>
+                {q.textHi && (
+                  <p style={{ margin: '0 0 12px', fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                    {q.textHi}
+                  </p>
+                )}
                 
                 {q.imageUrl && (
                   <div style={{ marginBottom: 12 }}>
@@ -1030,7 +1043,7 @@ export default function PracticeHub({ adminToken }) {
                 className="btn btn-danger btn-sm" 
                 onClick={(e) => { e.stopPropagation(); del.ask(s) }}
               >
-                ✕
+                <DeleteIcon size={16} />
               </button>
             </div>
           </div>
