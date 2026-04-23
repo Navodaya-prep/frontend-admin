@@ -1,53 +1,60 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { WS_BASE, pushLiveQuestion, endLiveQuestion } from '../api.js'
+import AgoraRTC from 'agora-rtc-sdk-ng'
+import { WS_BASE, pushLiveQuestion, endLiveQuestion, getAgoraToken } from '../api.js'
 
 const EMPTY_Q = { text: '', options: ['', '', '', ''], correctIndex: 0, isReadOnly: false, timerSeconds: 30 }
 
 export default function LiveClassRoom({ adminToken, liveClass, onBack }) {
   const [messages, setMessages] = useState([])
   const [connected, setConnected] = useState(false)
-  const [studentCount, setStudentCount] = useState(0)
   const [activeQuestion, setActiveQuestion] = useState(null)
   const [leaderboard, setLeaderboard] = useState([])
   const [showQuizForm, setShowQuizForm] = useState(false)
   const [form, setForm] = useState(EMPTY_Q)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+
+  // Agora state
+  const [broadcasting, setBroadcasting] = useState(false)
+  const [agoraError, setAgoraError] = useState('')
+  const localVideoRef = useRef(null)
+  const agoraClientRef = useRef(null)
+  const localTracksRef = useRef([])
+
   const wsRef = useRef(null)
   const chatEndRef = useRef(null)
 
+  // ── WebSocket ──────────────────────────────────────────────────────────────
   const connect = useCallback(() => {
     const url = `${WS_BASE}/ws/live/${liveClass.id}?adminToken=${encodeURIComponent(adminToken)}&name=${encodeURIComponent(liveClass.teacherName)}`
     const socket = new WebSocket(url)
-
     socket.onopen = () => setConnected(true)
     socket.onclose = () => {
       setConnected(false)
-      // Reconnect after 3s if class is still live
       setTimeout(connect, 3000)
     }
-    socket.onmessage = (e) => {
-      const msg = JSON.parse(e.data)
-      handleServerEvent(msg)
-    }
+    socket.onmessage = (e) => handleServerEvent(JSON.parse(e.data))
     wsRef.current = socket
   }, [adminToken, liveClass])
 
   useEffect(() => {
     connect()
-    return () => {
-      wsRef.current?.close()
-    }
+    return () => { wsRef.current?.close() }
   }, [connect])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Cleanup Agora on unmount
+  useEffect(() => {
+    return () => { stopBroadcast() }
+  }, [])
+
   function handleServerEvent(msg) {
     switch (msg.type) {
       case 'chat_message':
-        setMessages(prev => [...prev.slice(-200), msg.payload]) // keep last 200
+        setMessages(prev => [...prev.slice(-200), msg.payload])
         break
       case 'quiz_start':
         setActiveQuestion(msg.payload)
@@ -58,11 +65,55 @@ export default function LiveClassRoom({ adminToken, liveClass, onBack }) {
         setLeaderboard(msg.payload.leaderboard || [])
         break
       case 'class_end':
+        stopBroadcast()
         onBack()
         break
     }
   }
 
+  // ── Agora Broadcasting ─────────────────────────────────────────────────────
+  async function startBroadcast() {
+    setAgoraError('')
+    try {
+      const { token, appId, channelName, uid } = await getAgoraToken(adminToken, liveClass.id)
+
+      const client = AgoraRTC.createClient({ mode: 'live', codec: 'vp8' })
+      agoraClientRef.current = client
+
+      await client.setClientRole('host')
+      await client.join(appId, channelName, token || null, uid || 1)
+
+      const [audioTrack, videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks()
+      localTracksRef.current = [audioTrack, videoTrack]
+
+      await client.publish([audioTrack, videoTrack])
+
+      if (localVideoRef.current) {
+        videoTrack.play(localVideoRef.current)
+      }
+
+      setBroadcasting(true)
+    } catch (err) {
+      setAgoraError(err.message || 'Failed to start broadcast')
+    }
+  }
+
+  async function stopBroadcast() {
+    try {
+      for (const track of localTracksRef.current) {
+        track.stop()
+        track.close()
+      }
+      localTracksRef.current = []
+      if (agoraClientRef.current) {
+        await agoraClientRef.current.leave()
+        agoraClientRef.current = null
+      }
+    } catch (_) {}
+    setBroadcasting(false)
+  }
+
+  // ── Quiz ───────────────────────────────────────────────────────────────────
   function setOption(i, val) {
     setForm(f => { const opts = [...f.options]; opts[i] = val; return { ...f, options: opts } })
   }
@@ -94,6 +145,7 @@ export default function LiveClassRoom({ adminToken, liveClass, onBack }) {
     } catch (e) { alert(e.message) }
   }
 
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       <div className="page-header">
@@ -110,17 +162,29 @@ export default function LiveClassRoom({ adminToken, liveClass, onBack }) {
       </div>
 
       <div className="room-grid">
-        {/* Left: YouTube + Quiz */}
+        {/* Left: Video + Quiz */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* YouTube embed */}
-          <div className="card" style={{ padding: 0, overflow: 'hidden', aspectRatio: '16/9' }}>
-            <iframe
-              width="100%" height="100%"
-              src={`https://www.youtube.com/embed/${liveClass.youtubeVideoId}?autoplay=1`}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              style={{ border: 'none', display: 'block' }}
-            />
+
+          {/* Agora Camera Panel */}
+          <div className="card" style={{ padding: 0, overflow: 'hidden', aspectRatio: '16/9', background: '#111', position: 'relative' }}>
+            <div ref={localVideoRef} style={{ width: '100%', height: '100%' }} />
+            {!broadcasting && (
+              <div style={{
+                position: 'absolute', inset: 0, display: 'flex',
+                flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12,
+              }}>
+                <p style={{ color: '#fff', margin: 0 }}>Camera is off</p>
+                <button className="btn btn-primary" onClick={startBroadcast}>
+                  📹 Start Broadcasting
+                </button>
+                {agoraError && <p style={{ color: '#f87171', fontSize: 13 }}>{agoraError}</p>}
+              </div>
+            )}
+            {broadcasting && (
+              <div style={{ position: 'absolute', bottom: 12, right: 12 }}>
+                <button className="btn btn-sm btn-danger" onClick={stopBroadcast}>⏹ Stop Camera</button>
+              </div>
+            )}
           </div>
 
           {/* Active Question */}
@@ -147,7 +211,6 @@ export default function LiveClassRoom({ adminToken, liveClass, onBack }) {
                 {showQuizForm ? 'Cancel' : '+ New Question'}
               </button>
             </div>
-
             {showQuizForm && (
               <form onSubmit={handlePushQuestion}>
                 <div className="form-group">

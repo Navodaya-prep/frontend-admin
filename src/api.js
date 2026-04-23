@@ -89,6 +89,7 @@ export const endLiveClass = (token, classId) => request('DELETE', `/live/classes
 export const pushLiveQuestion = (token, classId, body) => request('POST', `/live/classes/${classId}/questions`, token, body)
 export const endLiveQuestion = (token, classId, qid) => request('DELETE', `/live/classes/${classId}/questions/${qid}`, token)
 export const getLeaderboard = (token, classId, qid) => request('GET', `/live/classes/${classId}/questions/${qid}/leaderboard`, token)
+export const getAgoraToken = (token, classId) => request('GET', `/live/classes/${classId}/agora-token`, token)
 
 // ── Practice Hub — Subjects ───────────────────────────────────────────────────
 export const listSubjects = (token) => request('GET', '/practice/subjects', token).then((d) => d.subjects)
