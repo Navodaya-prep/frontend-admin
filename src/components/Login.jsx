@@ -48,7 +48,7 @@ export default function Login({ onLogin }) {
     <div className="login-wrapper">
       <div className="login-card">
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>🏫</div>
+          <img src="/logo.png" alt="NavodayaSarthi" style={{ width: 100, height: 100, objectFit: 'contain', marginBottom: 12, borderRadius: 16 }} />
           <h1 className="login-title">Admin Login</h1>
           <p className="login-sub">NavodayaSarthi Admin Panel</p>
         </div>
