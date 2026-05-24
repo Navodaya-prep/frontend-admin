@@ -83,7 +83,7 @@ export default function App() {
     <div className="app">
       <header className="header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span className="header-title">Navodaya Admin</span>
+          <span className="header-title">NavodayaSarthi Admin</span>
           <nav className="tab-nav">
             {TABS.map(t => (
               <button

@@ -50,7 +50,7 @@ export default function Login({ onLogin }) {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🏫</div>
           <h1 className="login-title">Admin Login</h1>
-          <p className="login-sub">Navodaya Prime Admin Panel</p>
+          <p className="login-sub">NavodayaSarthi Admin Panel</p>
         </div>
         
         <form onSubmit={handleSubmit}>
