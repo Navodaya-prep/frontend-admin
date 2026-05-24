@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import PrivacyPolicy from './components/PrivacyPolicy.jsx'
 import Login from './components/Login.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import MockTestDetail from './components/MockTestDetail.jsx'
@@ -76,6 +77,9 @@ export default function App() {
     setSelectedTest(null)
     setSelectedClass(null)
   }
+
+  // Public routes — no auth required
+  if (window.location.pathname === '/privacy-policy') return <PrivacyPolicy />
 
   if (!adminToken) return <Login onLogin={setAdminToken} />
 
