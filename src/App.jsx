@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import PrivacyPolicy from './components/PrivacyPolicy.jsx'
+import DeleteAccount from './components/DeleteAccount.jsx'
 import Login from './components/Login.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import MockTestDetail from './components/MockTestDetail.jsx'
@@ -80,6 +81,7 @@ export default function App() {
 
   // Public routes — no auth required
   if (window.location.pathname === '/privacy-policy') return <PrivacyPolicy />
+  if (window.location.pathname === '/delete-account') return <DeleteAccount />
 
   if (!adminToken) return <Login onLogin={setAdminToken} />
 

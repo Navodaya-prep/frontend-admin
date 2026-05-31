@@ -100,6 +100,24 @@ function CourseModal({ initial, onSave, onClose }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Lesson Modal
 // ─────────────────────────────────────────────────────────────────────────────
+// Accepts any YouTube URL format or bare ID, returns just the video ID.
+function parseYouTubeID(input = '') {
+  const s = input.trim()
+  if (!s) return ''
+  if (!s.includes('/') && !s.includes('?')) return s  // already a bare ID
+  const patterns = [
+    /[?&]v=([^&?/\s]+)/,       // watch?v=ID
+    /youtu\.be\/([^?&/\s]+)/,  // youtu.be/ID
+    /\/embed\/([^?&/\s]+)/,    // /embed/ID
+    /\/shorts\/([^?&/\s]+)/,   // /shorts/ID
+  ]
+  for (const re of patterns) {
+    const m = s.match(re)
+    if (m) return m[1]
+  }
+  return s
+}
+
 function LessonModal({ initial, courseId, onSave, onClose }) {
   const [form, setForm] = useState(initial ?? {
     title: '', type: 'video', youtubeVideoId: '',
@@ -107,6 +125,7 @@ function LessonModal({ initial, courseId, onSave, onClose }) {
     order: 0, isPremium: false,
   })
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const previewId = parseYouTubeID(form.youtubeVideoId)
   return (
     <div className="modal-overlay">
       <div className="modal" style={{ width: 500 }}>
@@ -130,9 +149,19 @@ function LessonModal({ initial, courseId, onSave, onClose }) {
 
         {form.type === 'video' ? (
           <>
-            <label className="form-label">YouTube Video ID / URL</label>
+            <label className="form-label">YouTube URL</label>
             <input className="input" value={form.youtubeVideoId} onChange={set('youtubeVideoId')}
-              placeholder="dQw4w9WgXcQ or full YouTube URL" />
+              placeholder="Paste full YouTube link or video ID" />
+            {previewId && (
+              <div style={{ marginTop: 8, borderRadius: 8, overflow: 'hidden', background: '#000', lineHeight: 0 }}>
+                <img
+                  src={`https://img.youtube.com/vi/${previewId}/hqdefault.jpg`}
+                  alt="YouTube thumbnail"
+                  style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }}
+                  onError={(e) => { e.target.style.display = 'none' }}
+                />
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -190,12 +219,7 @@ function LessonsPanel({ adminToken, chapter, courseId }) {
   useEffect(() => { load() }, [chapter.id])
 
   async function handleSave(form) {
-    // Extract YouTube ID from URL if needed
-    const payload = { ...form }
-    if (form.youtubeVideoId?.includes('youtube.com') || form.youtubeVideoId?.includes('youtu.be')) {
-      const match = form.youtubeVideoId.match(/(?:v=|youtu\.be\/)([^&?/]+)/)
-      if (match) payload.youtubeVideoId = match[1]
-    }
+    const payload = { ...form, youtubeVideoId: parseYouTubeID(form.youtubeVideoId) }
     try {
       if (modal && modal !== 'create') {
         await updateLesson(adminToken, modal.id, payload)
