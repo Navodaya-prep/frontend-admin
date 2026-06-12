@@ -16,6 +16,7 @@ import ManageTeachers from './components/ManageTeachers.jsx'
 import Settings from './components/Settings.jsx'
 import DailyChallenge from './components/DailyChallenge.jsx'
 import Doubts from './components/Doubts.jsx'
+import Notifications from './components/Notifications.jsx'
 import Icon from './components/Icons.jsx'
 
 export default function App() {
@@ -24,7 +25,7 @@ export default function App() {
     const stored = localStorage.getItem('adminInfo')
     return stored ? JSON.parse(stored) : null
   })
-  const [tab, setTab] = useState('overview')
+  const [tab, setTab] = useState(() => window.location.hash.slice(1) || 'overview')
   const [view, setView] = useState('list') // 'list' | 'detail'
   const [selectedTest, setSelectedTest] = useState(null)
   const [selectedClass, setSelectedClass] = useState(null)
@@ -39,10 +40,14 @@ export default function App() {
 
   async function loadAdminInfo() {
     try {
-      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
       const res = await fetch(`${API_URL}/admin/auth/profile`, {
         headers: { 'Authorization': `Bearer ${adminToken}` }
       })
+      if (res.status === 401) {
+        handleLogout()
+        return
+      }
       const json = await res.json()
       if (json.success) {
         setAdminInfo(json.data.admin)
@@ -61,6 +66,7 @@ export default function App() {
   }
 
   function navigate(id) {
+    window.location.hash = id
     setTab(id)
     setView('list')
     setSelectedTest(null)
@@ -139,6 +145,7 @@ export default function App() {
             <LiveClassRoom adminToken={adminToken} liveClass={selectedClass} onBack={handleBack} />
           )}
           {tab === 'doubts' && <Doubts adminToken={adminToken} />}
+          {tab === 'notifications' && <Notifications adminToken={adminToken} isSuperAdmin={adminInfo?.isSuperAdmin} />}
           {tab === 'settings' && <Settings adminToken={adminToken} isSuperAdmin={adminInfo?.isSuperAdmin} />}
           {tab === 'daily' && adminInfo?.isSuperAdmin && <DailyChallenge adminToken={adminToken} />}
           {tab === 'teachers' && adminInfo?.isSuperAdmin && <ManageTeachers adminToken={adminToken} />}

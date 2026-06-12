@@ -20,6 +20,7 @@ export const NAV_SECTIONS = (isSuperAdmin) => [
     label: 'Engagement',
     items: [
       { id: 'doubts', label: 'Doubts', icon: 'message', title: 'Student Doubts', desc: 'Review and answer questions posted by students' },
+      { id: 'notifications', label: 'Notifications', icon: 'bell', title: 'Push Notifications', desc: 'Edit notification messages, send announcements, view history' },
       ...(isSuperAdmin ? [{ id: 'daily', label: 'Daily Challenge', icon: 'zap', title: 'Daily Challenge', desc: 'One question a day to keep students coming back' }] : []),
     ],
   },

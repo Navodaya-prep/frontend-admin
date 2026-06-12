@@ -29,7 +29,7 @@ export default function AdminProfile({ adminToken, onUpdate }) {
 
   async function loadProfile() {
     try {
-      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
       const res = await fetch(`${API_URL}/admin/auth/profile`, {
         headers: { 'Authorization': `Bearer ${adminToken}` }
       })
@@ -55,7 +55,7 @@ export default function AdminProfile({ adminToken, onUpdate }) {
     setSuccess('')
     
     try {
-      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
       const res = await fetch(`${API_URL}/admin/auth/profile`, {
         method: 'PUT',
         headers: {
@@ -97,7 +97,7 @@ export default function AdminProfile({ adminToken, onUpdate }) {
     }
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
       const res = await fetch(`${API_URL}/admin/auth/change-password`, {
         method: 'PUT',
         headers: {

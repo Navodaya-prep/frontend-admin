@@ -21,10 +21,24 @@ async function request(method, path, token, body) {
       body: body ? JSON.stringify(body) : undefined,
     })
     
-    // Check if response is ok
     if (!res.ok) {
       const text = await res.text()
       console.error('API Error Response:', res.status, text)
+
+      // Only logout when the token itself is invalid, not on permission errors (FORBIDDEN)
+      if (res.status === 401 || res.status === 403) {
+        try {
+          const json = JSON.parse(text)
+          if (json.error === 'UNAUTHORIZED') {
+            localStorage.removeItem('adminToken')
+            localStorage.removeItem('adminInfo')
+            window.location.hash = ''
+            window.location.reload()
+            return
+          }
+        } catch { /* not JSON, fall through */ }
+      }
+
       throw new Error(`Server error: ${res.status} - ${text.substring(0, 100)}`)
     }
     
@@ -142,6 +156,12 @@ export const inviteTeacher = (token, body) => request('POST', '/manage/teachers/
 export const updateTeacher = (token, id, body) => request('PUT', `/manage/teachers/${id}`, token, body)
 export const toggleTeacherStatus = (token, id) => request('PUT', `/manage/teachers/${id}/toggle`, token)
 export const deleteTeacher = (token, id) => request('DELETE', `/manage/teachers/${id}`, token)
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+export const listNotificationTemplates = (token) => request('GET', '/notifications/templates', token).then((d) => d.templates)
+export const updateNotificationTemplate = (token, key, body) => request('PUT', `/notifications/templates/${key}`, token, body)
+export const sendBroadcastNotification = (token, body) => request('POST', '/notifications/broadcast', token, body)
+export const listNotificationLogs = (token) => request('GET', '/notifications/logs', token).then((d) => d.logs)
 
 // ── Doubts ────────────────────────────────────────────────────────────────────
 export const listDoubts = (token, params = {}) => {

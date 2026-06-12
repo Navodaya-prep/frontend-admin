@@ -22,7 +22,7 @@ export default function AdminManagement({ adminToken }) {
   async function loadAdmins() {
     setLoading(true)
     try {
-      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
       const res = await fetch(`${API_URL}/admin/manage/admins`, {
         headers: { 'Authorization': `Bearer ${adminToken}` }
       })
@@ -45,7 +45,7 @@ export default function AdminManagement({ adminToken }) {
     setSuccess('')
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
       const res = await fetch(`${API_URL}/admin/manage/admins/invite`, {
         method: 'POST',
         headers: {
@@ -77,7 +77,7 @@ export default function AdminManagement({ adminToken }) {
     setSuccess('')
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL ?? '/api'
+      const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api'
       const res = await fetch(`${API_URL}/admin/manage/admins/${adminId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${adminToken}` }
