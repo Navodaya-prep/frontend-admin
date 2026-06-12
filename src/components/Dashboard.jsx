@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { listMockTests, createMockTest, updateMockTest, deleteMockTest } from '../api.js'
-import DeleteIcon from './DeleteIcon.jsx'
+import Icon from './Icons.jsx'
 
 const CLASS_LEVELS = ['6', '7', '8', '9', 'both']
 const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge']
@@ -13,6 +13,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
   const [success, setSuccess] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingTest, setEditingTest] = useState(null)
+  const [deleting, setDeleting] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
@@ -21,6 +22,11 @@ export default function Dashboard({ adminToken, onSelectTest }) {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => { fetchTests() }, [])
+
+  function flash(msg) {
+    setSuccess(msg)
+    setTimeout(() => setSuccess(''), 3000)
+  }
 
   async function fetchTests() {
     setLoading(true)
@@ -74,15 +80,14 @@ export default function Dashboard({ adminToken, onSelectTest }) {
       }
       if (editingTest) {
         await updateMockTest(adminToken, editingTest._id, payload)
-        setSuccess('Mock test updated successfully!')
+        flash('Mock test updated.')
       } else {
         await createMockTest(adminToken, payload)
-        setSuccess('Mock test created successfully!')
+        flash('Mock test created.')
       }
       setShowModal(false)
       setForm(EMPTY_FORM)
       setEditingTest(null)
-      setTimeout(() => setSuccess(''), 3000)
       fetchTests()
     } catch (e) {
       setFormError(e.message)
@@ -91,17 +96,17 @@ export default function Dashboard({ adminToken, onSelectTest }) {
     }
   }
 
-  async function handleDelete(test) {
-    if (!confirm(`Are you sure you want to delete "${test.title}"? This will also delete all questions.`)) return
-    
+  async function confirmDelete() {
+    if (!deleting) return
     setError('')
     try {
-      await deleteMockTest(adminToken, test._id)
-      setSuccess('Mock test deleted successfully!')
-      setTimeout(() => setSuccess(''), 3000)
+      await deleteMockTest(adminToken, deleting._id)
+      flash('Mock test deleted.')
+      setDeleting(null)
       fetchTests()
     } catch (e) {
       setError(e.message)
+      setDeleting(null)
     }
   }
 
@@ -112,234 +117,111 @@ export default function Dashboard({ adminToken, onSelectTest }) {
     return true
   })
 
+  const hasFilters = filterSubject || filterClass || searchQuery
+
   return (
     <div>
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div>
-            <h1 style={{ margin: '0 0 8px 0', fontSize: 32 }}>Mock Tests</h1>
-            <p style={{ margin: 0, color: 'var(--muted)' }}>Create and manage mock tests for students</p>
-          </div>
-          <button className="btn btn-primary" onClick={openCreateModal}>
-            + Create Mock Test
-          </button>
+      <div className="page-header">
+        <div>
+          <h1>Mock Tests</h1>
+          <p className="page-desc">
+            Timed, exam-style tests with auto-scoring and a leaderboard. Click a test to manage its questions.
+          </p>
         </div>
+        <button className="btn btn-primary" onClick={openCreateModal}>
+          <Icon name="plus" size={16} /> Create Mock Test
+        </button>
+      </div>
 
-        {/* Filters and Search */}
-        <div style={{ 
-          display: 'flex', 
-          gap: 12, 
-          padding: 20,
-          background: 'white',
-          borderRadius: 12,
-          border: '1px solid var(--border)'
-        }}>
+      {/* Filters and search */}
+      <div className="toolbar">
+        <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+          <Icon name="search" size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
           <input
             type="text"
             className="input"
-            placeholder="🔍 Search mock tests..."
+            placeholder="Search mock tests…"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ flex: 1 }}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{ paddingLeft: 36 }}
           />
-          <select
-            className="input"
-            value={filterSubject}
-            onChange={(e) => setFilterSubject(e.target.value)}
-            style={{ minWidth: 180 }}
-          >
-            <option value="">All Subjects</option>
-            {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-          <select
-            className="input"
-            value={filterClass}
-            onChange={(e) => setFilterClass(e.target.value)}
-            style={{ minWidth: 150 }}
-          >
-            <option value="">All Classes</option>
-            {CLASS_LEVELS.map(c => <option key={c} value={c}>Class {c}</option>)}
-          </select>
-          {(filterSubject || filterClass || searchQuery) && (
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                setFilterSubject('')
-                setFilterClass('')
-                setSearchQuery('')
-              }}
-            >
-              Clear Filters
-            </button>
-          )}
         </div>
+        <select className="input" value={filterSubject} onChange={e => setFilterSubject(e.target.value)} style={{ width: 'auto', minWidth: 170 }}>
+          <option value="">All Subjects</option>
+          {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+        <select className="input" value={filterClass} onChange={e => setFilterClass(e.target.value)} style={{ width: 'auto', minWidth: 140 }}>
+          <option value="">All Classes</option>
+          {CLASS_LEVELS.map(c => <option key={c} value={c}>Class {c}</option>)}
+        </select>
+        {hasFilters && (
+          <button className="btn btn-ghost btn-sm" onClick={() => { setFilterSubject(''); setFilterClass(''); setSearchQuery('') }}>
+            <Icon name="x" size={14} /> Clear
+          </button>
+        )}
       </div>
 
-      {error && (
-        <div className="error-banner" style={{ marginBottom: 16 }}>
-          {error}
-        </div>
-      )}
+      {error && <div className="error-banner">{error}</div>}
+      {success && <div className="success-banner">{success}</div>}
 
-      {success && (
-        <div style={{
-          padding: 12,
-          background: '#d4edda',
-          color: '#155724',
-          border: '1px solid #c3e6cb',
-          borderRadius: 6,
-          marginBottom: 16
-        }}>
-          {success}
-        </div>
-      )}
-
-      {loading && (
-        <div style={{ textAlign: 'center', padding: 80 }}>
-          <p style={{ color: 'var(--muted)', fontSize: 16 }}>Loading mock tests...</p>
-        </div>
-      )}
+      {loading && <div className="loading-block"><div className="spinner" />Loading mock tests…</div>}
 
       {!loading && filteredTests.length === 0 && (
-        <div style={{
-          textAlign: 'center',
-          padding: 80,
-          background: 'white',
-          borderRadius: 12,
-          border: '2px dashed var(--border)'
-        }}>
-          <div style={{ fontSize: 64, marginBottom: 16 }}>📝</div>
-          <h3 style={{ margin: '0 0 8px 0', fontSize: 20 }}>
-            {tests.length === 0 ? 'No mock tests yet' : 'No results found'}
-          </h3>
-          <p style={{ margin: '0 0 24px 0', color: 'var(--muted)' }}>
-            {tests.length === 0 
-              ? 'Create your first mock test to get started'
-              : 'Try adjusting your filters or search query'
-            }
+        <div className="empty-state">
+          <div className="empty-icon"><Icon name="clipboard" size={26} /></div>
+          <h3>{tests.length === 0 ? 'No mock tests yet' : 'No results found'}</h3>
+          <p>
+            {tests.length === 0
+              ? 'Create your first mock test to get started.'
+              : 'Try adjusting your filters or search query.'}
           </p>
           {tests.length === 0 && (
             <button className="btn btn-primary" onClick={openCreateModal}>
-              + Create Mock Test
+              <Icon name="plus" size={16} /> Create Mock Test
             </button>
           )}
         </div>
       )}
 
       {!loading && filteredTests.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: 20 }}>
           {filteredTests.map(test => (
-            <div
-              key={test._id}
-              style={{
-                background: 'white',
-                borderRadius: 12,
-                padding: 24,
-                border: '1px solid var(--border)',
-                transition: 'all 0.2s',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'
-                e.currentTarget.style.transform = 'translateY(-2px)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = 'none'
-                e.currentTarget.style.transform = 'translateY(0)'
-              }}
-              onClick={() => onSelectTest(test)}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: 18, fontWeight: 600 }}>{test.title}</h3>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '4px 10px',
-                      background: '#e0f2fe',
-                      color: '#0369a1',
-                      borderRadius: 12,
-                      fontSize: 12,
-                      fontWeight: 600
-                    }}>
-                      {test.subject}
-                    </span>
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '4px 10px',
-                      background: '#f3e8ff',
-                      color: '#7c3aed',
-                      borderRadius: 12,
-                      fontSize: 12,
-                      fontWeight: 600
-                    }}>
-                      Class {test.classLevel}
-                    </span>
-                    {test.isPremium && (
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '4px 10px',
-                        background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-                        color: 'white',
-                        borderRadius: 12,
-                        fontSize: 12,
-                        fontWeight: 600
-                      }}>
-                        👑 Premium
-                      </span>
-                    )}
-                  </div>
-                </div>
+            <div key={test._id} className="card card-hover" onClick={() => onSelectTest(test)}>
+              <h3 style={{ margin: '0 0 10px', fontSize: 16.5, fontWeight: 700 }}>{test.title}</h3>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <span className="badge badge-blue">{test.subject}</span>
+                <span className="badge badge-purple">Class {test.classLevel}</span>
+                {test.isPremium && <span className="badge badge-premium"><Icon name="crown" size={12} /> Premium</span>}
               </div>
 
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: 12,
-                padding: 16,
-                background: 'var(--bg-light)',
-                borderRadius: 8,
-                marginTop: 16
+                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
+                padding: 14, background: 'var(--bg-light)', borderRadius: 10, margin: '16px 0',
               }}>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4, fontWeight: 600 }}>Questions</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: test.questionCount === 0 ? 'var(--muted)' : '#6366f1' }}>
+                  <div className="stat-label">Questions</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: test.questionCount ? 'var(--primary)' : 'var(--muted)' }}>
                     {test.questionCount || 0}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4, fontWeight: 600 }}>Duration</div>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: '#06b6d4' }}>
-                    {test.duration}<span style={{ fontSize: 14, fontWeight: 400, color: 'var(--muted)' }}>m</span>
+                  <div className="stat-label">Duration</div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--info)' }}>
+                    {test.duration}<span style={{ fontSize: 13, fontWeight: 500, color: 'var(--muted)' }}> min</span>
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }} onClick={(e) => e.stopPropagation()}>
-                <button
-                  className="btn btn-primary"
-                  style={{ flex: 1, fontSize: 14 }}
-                  onClick={() => onSelectTest(test)}
-                >
+              <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => onSelectTest(test)}>
                   Manage Questions
                 </button>
-                <button
-                  className="btn btn-outline"
-                  style={{ padding: '8px 14px', fontSize: 13 }}
-                  onClick={(e) => openEditModal(test, e)}
-                  title="Edit test details"
-                >
-                  ✏️ Edit
+                <button className="btn btn-outline btn-sm" onClick={e => openEditModal(test, e)} title="Edit test details">
+                  <Icon name="edit" size={14} />
                 </button>
-                <button
-                  className="btn btn-outline"
-                  style={{ padding: '8px 12px', fontSize: 14 }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleDelete(test)
-                  }}
-                >
-                  <DeleteIcon size={18} />
+                <button className="btn btn-outline btn-sm" style={{ color: 'var(--danger)' }} title="Delete test"
+                  onClick={e => { e.stopPropagation(); setDeleting(test) }}>
+                  <Icon name="trash" size={14} />
                 </button>
               </div>
             </div>
@@ -347,27 +229,31 @@ export default function Dashboard({ adminToken, onSelectTest }) {
         </div>
       )}
 
+      {/* Create / edit test modal */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h2 style={{ margin: 0 }}>{editingTest ? 'Edit Mock Test' : 'Create Mock Test'}</h2>
-              <button onClick={() => setShowModal(false)} className="btn btn-outline" style={{ padding: '4px 12px' }}>✕</button>
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
+          <div className="modal" style={{ maxWidth: 560 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <h2>{editingTest ? 'Edit Mock Test' : 'Create Mock Test'}</h2>
+              <button onClick={() => setShowModal(false)} className="btn btn-ghost btn-icon" aria-label="Close">
+                <Icon name="x" size={17} />
+              </button>
             </div>
 
             <form onSubmit={handleSubmitForm}>
               <div className="form-group">
-                <label className="form-label">Test Title</label>
+                <label className="form-label">Test title</label>
                 <input
                   className="input"
                   value={form.title}
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                   placeholder="e.g. Class 6 Mathematics Full Test"
                   required
+                  autoFocus
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div className="form-group">
                   <label className="form-label">Subject</label>
                   <select
@@ -381,7 +267,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Class Level</label>
+                  <label className="form-label">Class level</label>
                   <select
                     className="input"
                     value={form.classLevel}
@@ -392,7 +278,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 14, alignItems: 'end' }}>
                 <div className="form-group">
                   <label className="form-label">Duration (minutes)</label>
                   <input
@@ -405,8 +291,8 @@ export default function Dashboard({ adminToken, onSelectTest }) {
                     required
                   />
                 </div>
-                <div className="form-group" style={{ paddingBottom: 8 }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <div className="form-group" style={{ paddingBottom: 9 }}>
+                  <label className="form-checkbox" style={{ cursor: 'pointer' }}>
                     <input
                       type="checkbox"
                       checked={form.isPremium}
@@ -418,21 +304,33 @@ export default function Dashboard({ adminToken, onSelectTest }) {
                 </div>
               </div>
 
-              {formError && (
-                <div className="error-banner" style={{ marginTop: 16 }}>
-                  {formError}
-                </div>
-              )}
+              {formError && <div className="error-banner" style={{ marginTop: 8 }}>{formError}</div>}
 
-              <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={submitting} style={{ flex: 1 }}>
-                  {submitting ? (editingTest ? 'Saving...' : 'Creating...') : (editingTest ? 'Save Changes' : 'Create Mock Test')}
+                <button type="submit" className="btn btn-primary" disabled={submitting}>
+                  {submitting ? 'Saving…' : (editingTest ? 'Save Changes' : 'Create Mock Test')}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {deleting && (
+        <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setDeleting(null)}>
+          <div className="modal" style={{ maxWidth: 440 }}>
+            <h3>Delete "{deleting.title}"?</h3>
+            <p className="muted" style={{ margin: '12px 0 0', lineHeight: 1.6 }}>
+              The test and all of its {deleting.questionCount || 0} question{(deleting.questionCount || 0) !== 1 ? 's' : ''} will be permanently removed. This cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="btn btn-outline" onClick={() => setDeleting(null)}>Cancel</button>
+              <button className="btn btn-danger" onClick={confirmDelete}>Delete Test</button>
+            </div>
           </div>
         </div>
       )}

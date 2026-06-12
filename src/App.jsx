@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import PrivacyPolicy from './components/PrivacyPolicy.jsx'
 import DeleteAccount from './components/DeleteAccount.jsx'
 import Login from './components/Login.jsx'
+import Sidebar, { NAV_SECTIONS } from './components/Sidebar.jsx'
+import Overview from './components/Overview.jsx'
 import Dashboard from './components/Dashboard.jsx'
 import MockTestDetail from './components/MockTestDetail.jsx'
 import LiveClasses from './components/LiveClasses.jsx'
@@ -14,6 +16,7 @@ import ManageTeachers from './components/ManageTeachers.jsx'
 import Settings from './components/Settings.jsx'
 import DailyChallenge from './components/DailyChallenge.jsx'
 import Doubts from './components/Doubts.jsx'
+import Icon from './components/Icons.jsx'
 
 export default function App() {
   const [adminToken, setAdminToken] = useState(() => localStorage.getItem('adminToken') || '')
@@ -21,32 +24,16 @@ export default function App() {
     const stored = localStorage.getItem('adminInfo')
     return stored ? JSON.parse(stored) : null
   })
-  const [tab, setTab] = useState('mocktests')
+  const [tab, setTab] = useState('overview')
   const [view, setView] = useState('list') // 'list' | 'detail'
   const [selectedTest, setSelectedTest] = useState(null)
   const [selectedClass, setSelectedClass] = useState(null)
-
-  const TABS = [
-    { id: 'recorded', label: '🎥 Recorded Classes' },
-    { id: 'practice', label: '📋 Practice Hub' },
-    { id: 'mocktests', label: 'Mock Tests' },
-    { id: 'live', label: '🔴 Live Classes' },
-    { id: 'doubts', label: '💬 Doubts' },
-    ...(adminInfo?.isSuperAdmin ? [{ id: 'daily', label: '⚡ Daily Challenge' }] : []),
-    { id: 'settings', label: '⚙️ Settings' },
-    ...(adminInfo?.isSuperAdmin ? [
-      { id: 'teachers', label: '👨‍🏫 Manage Teachers' },
-      { id: 'admins', label: '👥 Admin Management' },
-    ] : [])
-  ]
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     if (adminToken) {
       localStorage.setItem('adminToken', adminToken)
-      // Load admin info if not already loaded
-      if (!adminInfo) {
-        loadAdminInfo()
-      }
+      if (!adminInfo) loadAdminInfo()
     }
   }, [adminToken])
 
@@ -73,11 +60,28 @@ export default function App() {
     setAdminInfo(null)
   }
 
+  function navigate(id) {
+    setTab(id)
+    setView('list')
+    setSelectedTest(null)
+    setSelectedClass(null)
+    setSidebarOpen(false)
+  }
+
   function handleBack() {
     setView('list')
     setSelectedTest(null)
     setSelectedClass(null)
   }
+
+  const pageMeta = useMemo(() => {
+    if (tab === 'profile') return { title: 'My Profile', desc: 'Your account details and password' }
+    for (const section of NAV_SECTIONS(adminInfo?.isSuperAdmin)) {
+      const item = section.items.find(i => i.id === tab)
+      if (item) return item
+    }
+    return { title: 'Overview', desc: '' }
+  }, [tab, adminInfo])
 
   // Public routes — no auth required
   if (window.location.pathname === '/privacy-policy') return <PrivacyPolicy />
@@ -86,60 +90,66 @@ export default function App() {
   if (!adminToken) return <Login onLogin={setAdminToken} />
 
   return (
-    <div className="app">
-      <header className="header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <span className="header-title">NavodayaSarthi Admin</span>
-          <nav className="tab-nav">
-            {TABS.map(t => (
-              <button
-                key={t.id}
-                className={`tab-btn ${tab === t.id ? 'active' : ''}`}
-                onClick={() => { setTab(t.id); setView('list') }}
-              >
-                {t.label}
-              </button>
-            ))}
-          </nav>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {adminInfo && (
-            <button
-              className="btn btn-outline"
-              onClick={() => { setTab('profile'); setView('list'); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              <span style={{ fontSize: 18 }}>👤</span>
-              <span>{adminInfo.firstName} {adminInfo.lastName}</span>
-              {adminInfo.isSuperAdmin && <span style={{ fontSize: 14 }}>👑</span>}
-            </button>
-          )}
-          <button className="btn btn-outline" onClick={handleLogout}>Logout</button>
-        </div>
-      </header>
+    <div className="app-shell">
+      <Sidebar
+        active={tab}
+        onNavigate={navigate}
+        adminInfo={adminInfo}
+        onLogout={handleLogout}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      <main className="main">
-        {tab === 'recorded' && <RecordedClasses adminToken={adminToken} />}
-        {tab === 'practice' && <PracticeHub adminToken={adminToken} />}
-        {tab === 'mocktests' && view === 'list' && (
-          <Dashboard adminToken={adminToken} onSelectTest={t => { setSelectedTest(t); setView('detail') }} />
-        )}
-        {tab === 'mocktests' && view === 'detail' && selectedTest && (
-          <MockTestDetail adminToken={adminToken} test={selectedTest} onBack={handleBack} />
-        )}
-        {tab === 'live' && view === 'list' && (
-          <LiveClasses adminToken={adminToken} onEnterRoom={c => { setSelectedClass(c); setView('detail') }} />
-        )}
-        {tab === 'live' && view === 'detail' && selectedClass && (
-          <LiveClassRoom adminToken={adminToken} liveClass={selectedClass} onBack={handleBack} />
-        )}
-        {tab === 'doubts' && <Doubts adminToken={adminToken} />}
-        {tab === 'settings' && <Settings adminToken={adminToken} isSuperAdmin={adminInfo?.isSuperAdmin} />}
-        {tab === 'daily' && adminInfo?.isSuperAdmin && <DailyChallenge adminToken={adminToken} />}
-        {tab === 'teachers' && adminInfo?.isSuperAdmin && <ManageTeachers adminToken={adminToken} />}
-        {tab === 'admins' && adminInfo?.isSuperAdmin && <AdminManagement adminToken={adminToken} />}
-        {tab === 'profile' && <AdminProfile adminToken={adminToken} onUpdate={loadAdminInfo} />}
-      </main>
+      <div className="content">
+        <header className="topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+            <button className="menu-toggle" onClick={() => setSidebarOpen(true)} aria-label="Open navigation">
+              <Icon name="menu" size={20} />
+            </button>
+            <div style={{ minWidth: 0 }}>
+              <div className="topbar-title">{pageMeta.title}</div>
+              {pageMeta.desc && <div className="topbar-sub">{pageMeta.desc}</div>}
+            </div>
+          </div>
+          <div className="topbar-right">
+            {adminInfo?.isSuperAdmin && (
+              <span className="badge badge-purple"><Icon name="crown" size={13} /> Super Admin</span>
+            )}
+            <button className="btn btn-ghost btn-sm" onClick={() => navigate('profile')}>
+              <Icon name="user" size={16} />
+              Profile
+            </button>
+          </div>
+        </header>
+
+        <main className="main">
+          {tab === 'overview' && <Overview adminToken={adminToken} adminInfo={adminInfo} onNavigate={navigate} />}
+          {tab === 'recorded' && <RecordedClasses adminToken={adminToken} />}
+          {tab === 'practice' && <PracticeHub adminToken={adminToken} />}
+          {tab === 'mocktests' && view === 'list' && (
+            <Dashboard adminToken={adminToken} onSelectTest={t => { setSelectedTest(t); setView('detail') }} />
+          )}
+          {tab === 'mocktests' && view === 'detail' && selectedTest && (
+            <MockTestDetail adminToken={adminToken} test={selectedTest} onBack={handleBack} />
+          )}
+          {tab === 'live' && view === 'list' && (
+            <LiveClasses adminToken={adminToken} onEnterRoom={c => { setSelectedClass(c); setView('detail') }} />
+          )}
+          {tab === 'live' && view === 'detail' && selectedClass && (
+            <LiveClassRoom adminToken={adminToken} liveClass={selectedClass} onBack={handleBack} />
+          )}
+          {tab === 'doubts' && <Doubts adminToken={adminToken} />}
+          {tab === 'settings' && <Settings adminToken={adminToken} isSuperAdmin={adminInfo?.isSuperAdmin} />}
+          {tab === 'daily' && adminInfo?.isSuperAdmin && <DailyChallenge adminToken={adminToken} />}
+          {tab === 'teachers' && adminInfo?.isSuperAdmin && <ManageTeachers adminToken={adminToken} />}
+          {tab === 'admins' && adminInfo?.isSuperAdmin && <AdminManagement adminToken={adminToken} />}
+          {tab === 'profile' && <AdminProfile adminToken={adminToken} onUpdate={loadAdminInfo} />}
+        </main>
+
+        <footer className="content-footer">
+          NavodayaSarthi Admin Console · Empowering Navodaya aspirants across India
+        </footer>
+      </div>
     </div>
   )
 }

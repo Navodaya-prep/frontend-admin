@@ -47,10 +47,10 @@ export default function Login({ onLogin }) {
   return (
     <div className="login-wrapper">
       <div className="login-card">
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <img src="/logo.png" alt="NavodayaSarthi" style={{ width: 100, height: 100, objectFit: 'contain', marginBottom: 12, borderRadius: 16 }} />
-          <h1 className="login-title">Admin Login</h1>
-          <p className="login-sub">NavodayaSarthi Admin Panel</p>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <img src="/logo.png" alt="NavodayaSarthi" style={{ width: 76, height: 76, objectFit: 'contain', marginBottom: 14, borderRadius: 18, boxShadow: 'var(--shadow-md)' }} />
+          <h1 className="login-title">Welcome back</h1>
+          <p className="login-sub" style={{ marginBottom: 0 }}>Sign in to the NavodayaSarthi admin console</p>
         </div>
         
         <form onSubmit={handleSubmit}>
