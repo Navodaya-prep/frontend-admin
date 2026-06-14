@@ -3,7 +3,7 @@ import { listLiveClasses, createLiveClass, endLiveClass } from '../api.js'
 
 const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge', 'Mental Ability']
 const CLASS_LEVELS = ['6', '7', '8', '9', 'both']
-const EMPTY = { title: '', subject: '', teacherName: '', description: '', classLevel: '6', duration: 60, isPremium: false }
+const EMPTY = { title: '', titleHi: '', subject: '', teacherName: '', description: '', classLevel: '6', duration: 60, isPremium: false }
 
 export default function LiveClasses({ adminToken, onEnterRoom }) {
   const [classes, setClasses] = useState([])
@@ -103,8 +103,12 @@ export default function LiveClasses({ adminToken, onEnterRoom }) {
             <h3>Start Live Class</h3>
             <form onSubmit={handleCreate}>
               <div className="form-group">
-                <label>Title *</label>
+                <label>Title (English) *</label>
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Class 6 Maths Live" />
+              </div>
+              <div className="form-group">
+                <label>Title (Hindi)</label>
+                <input value={form.titleHi || ''} onChange={e => setForm(f => ({ ...f, titleHi: e.target.value }))} placeholder="जैसे, कक्षा 6 गणित लाइव" />
               </div>
               <div className="form-row">
                 <div className="form-group">

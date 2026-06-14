@@ -167,7 +167,9 @@ export default function QuestionEditorModal({
       explanation: form.explanation,
       difficulty: form.difficulty,
       classLevel: form.classLevel,
-      isPremium: form.isPremium,
+      // Per-question premium only applies where the feature is enabled (e.g.
+      // Practice Hub). For mock tests the whole test is premium or free.
+      isPremium: features.premium ? form.isPremium : false,
       isPYQ: form.isPYQ,
       examYear: form.isPYQ ? form.examYear : '',
       tags: form.tags ? form.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
@@ -344,16 +346,18 @@ export default function QuestionEditorModal({
           <div className="editor-section" style={{ marginBottom: 0 }}>
             <div className="editor-section-title">Visibility & source</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <label className="form-checkbox" style={{ cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={form.isPremium}
-                  onChange={e => set('isPremium', e.target.checked)}
-                  style={{ width: 16, height: 16, cursor: 'pointer' }}
-                />
-                <span style={{ fontWeight: 500 }}>Premium only</span>
-                <span className="muted" style={{ fontSize: 12.5 }}>— visible to subscribed students only</span>
-              </label>
+              {features.premium && (
+                <label className="form-checkbox" style={{ cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.isPremium}
+                    onChange={e => set('isPremium', e.target.checked)}
+                    style={{ width: 16, height: 16, cursor: 'pointer' }}
+                  />
+                  <span style={{ fontWeight: 500 }}>Premium only</span>
+                  <span className="muted" style={{ fontSize: 12.5 }}>— visible to subscribed students only</span>
+                </label>
+              )}
 
               <div style={{ padding: 14, background: 'var(--bg-light)', borderRadius: 10, border: '1px solid var(--border)' }}>
                 <label className="form-checkbox" style={{ cursor: 'pointer' }}>

@@ -54,17 +54,20 @@ function useConfirmDelete(onDelete) {
 // ─────────────────────────────────────────────────────────────────────────────
 function SubjectModal({ initial, onSave, onClose }) {
   const [form, setForm] = useState(
-    initial ?? { name: '', icon: '📚', color: '#2563eb', description: '', order: 0 }
+    initial ?? { name: '', nameHi: '', icon: '📚', color: '#2563eb', description: '', order: 0 }
   )
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  
+
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <h2>{initial ? 'Edit Subject' : 'New Subject'}</h2>
-        
-        <label className="form-label">Subject Name *</label>
+
+        <label className="form-label">Subject Name (English) *</label>
         <input className="input" value={form.name} onChange={set('name')} placeholder="e.g., Mental Ability" />
+
+        <label className="form-label" style={{ marginTop: 16 }}>Subject Name (Hindi)</label>
+        <input className="input" value={form.nameHi || ''} onChange={set('nameHi')} placeholder="जैसे, मानसिक योग्यता" />
         
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 16 }}>
           <div>
@@ -99,17 +102,20 @@ function SubjectModal({ initial, onSave, onClose }) {
 // ─────────────────────────────────────────────────────────────────────────────
 function ChapterModal({ initial, onSave, onClose }) {
   const [form, setForm] = useState(
-    initial ?? { title: '', description: '', order: 0, isPremium: false }
+    initial ?? { title: '', titleHi: '', description: '', order: 0, isPremium: false }
   )
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
-  
+
   return (
     <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <h2>{initial ? 'Edit Chapter' : 'New Chapter'}</h2>
-        
-        <label className="form-label">Chapter Title *</label>
+
+        <label className="form-label">Chapter Title (English) *</label>
         <input className="input" value={form.title} onChange={set('title')} placeholder="e.g., Number Series" />
+
+        <label className="form-label" style={{ marginTop: 16 }}>Chapter Title (Hindi)</label>
+        <input className="input" value={form.titleHi || ''} onChange={set('titleHi')} placeholder="जैसे, संख्या श्रृंखला" />
         
         <label className="form-label" style={{ marginTop: 16 }}>Description</label>
         <input className="input" value={form.description} onChange={set('description')} placeholder="Brief description" />
@@ -357,7 +363,7 @@ function QuestionsPanel({ adminToken, chapter }) {
           onSave={handleSave}
           onClose={() => setModal(null)}
           adminToken={adminToken}
-          features={{ hindi: true }}
+          features={{ hindi: true, premium: true }}
           classLevels={PRACTICE_CLASS_LEVELS}
           contextLabel={`Practice Hub · ${chapter.title}`}
         />
@@ -456,7 +462,10 @@ function ChaptersPanel({ adminToken, subject, onBack }) {
           {subject.icon}
         </div>
         <div style={{ flex: 1 }}>
-          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>{subject.name}</h2>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>
+            {subject.name}
+            {subject.nameHi ? <span style={{ fontWeight: 500, fontSize: 17, color: 'var(--muted)' }}> · {subject.nameHi}</span> : null}
+          </h2>
           <p style={{ color: 'var(--muted)', fontSize: 14, marginTop: 2 }}>Manage chapters and questions</p>
         </div>
         <button className="btn btn-primary" onClick={() => setModal('create')}>
@@ -498,6 +507,7 @@ function ChaptersPanel({ adminToken, subject, onBack }) {
                 <th>Chapter Title</th>
                 <th>Description</th>
                 <th style={{ width: 80, textAlign: 'center' }}>Type</th>
+                <th style={{ width: 150, textAlign: 'center' }}>Questions</th>
                 <th style={{ width: 240 }}>Actions</th>
               </tr>
             </thead>
@@ -519,6 +529,7 @@ function ChaptersPanel({ adminToken, subject, onBack }) {
                       onClick={() => setSelectedChapter(ch)}>
                       {ch.title}
                     </button>
+                    {ch.titleHi ? <span style={{ color: 'var(--muted)', fontSize: 13 }}> · {ch.titleHi}</span> : null}
                   </td>
                   <td style={{ color: 'var(--muted)', fontSize: 13 }}>{ch.description || '—'}</td>
                   <td style={{ textAlign: 'center' }}>
@@ -527,6 +538,13 @@ function ChaptersPanel({ adminToken, subject, onBack }) {
                     ) : (
                       <span style={{ color: 'var(--success)', fontSize: 16 }}>✓</span>
                     )}
+                  </td>
+                  <td style={{ textAlign: 'center', fontSize: 13 }}>
+                    <span style={{ fontWeight: 700 }}>{ch.questionCount ?? 0}</span>
+                    <span style={{ color: 'var(--muted)' }}> total</span>
+                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
+                      ⭐ {ch.premiumCount ?? 0} · ✓ {ch.freeCount ?? 0}
+                    </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -713,15 +731,21 @@ export default function PracticeHub({ adminToken }) {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <h3 style={{ fontWeight: 700, fontSize: 18, marginBottom: 4, color: 'var(--text)' }}>
                   {s.name}
+                  {s.nameHi ? <span style={{ fontWeight: 500, fontSize: 15, color: 'var(--muted)' }}> · {s.nameHi}</span> : null}
                 </h3>
                 {s.description && (
                   <p style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.4 }}>
                     {s.description}
                   </p>
                 )}
+                <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                  <span className="badge badge-gray">{s.questionCount ?? 0} total</span>
+                  <span className="badge badge-premium">⭐ {s.premiumCount ?? 0} premium</span>
+                  <span className="badge badge-gray">✓ {s.freeCount ?? 0} free</span>
+                </div>
               </div>
             </div>
-            
+
             <div style={{ 
               display: 'flex', 
               gap: 8,

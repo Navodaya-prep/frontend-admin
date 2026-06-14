@@ -40,7 +40,7 @@ const SUBJECTS = [
 
 function CourseModal({ initial, onSave, onClose }) {
   const [form, setForm] = useState(initial ?? {
-    title: '', subject: 'mental_ability', classLevel: '',
+    title: '', titleHi: '', subject: 'mental_ability', classLevel: '',
     thumbnail: '🎥', description: '', order: 0, isPremium: false,
   })
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -48,8 +48,10 @@ function CourseModal({ initial, onSave, onClose }) {
     <div className="modal-overlay">
       <div className="modal" style={{ width: 460 }}>
         <h2 style={{ marginBottom: 16 }}>{initial ? 'Edit Course' : 'New Course'}</h2>
-        <label className="form-label">Title *</label>
+        <label className="form-label">Title (English) *</label>
         <input className="input" value={form.title} onChange={set('title')} placeholder="e.g. Mental Ability Masterclass" />
+        <label className="form-label" style={{ marginTop: 12 }}>Title (Hindi)</label>
+        <input className="input" value={form.titleHi || ''} onChange={set('titleHi')} placeholder="जैसे, मानसिक योग्यता मास्टरक्लास" />
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <label className="form-label">Subject *</label>
@@ -120,7 +122,7 @@ function parseYouTubeID(input = '') {
 
 function LessonModal({ initial, courseId, onSave, onClose }) {
   const [form, setForm] = useState(initial ?? {
-    title: '', type: 'video', youtubeVideoId: '',
+    title: '', titleHi: '', type: 'video', youtubeVideoId: '',
     noteContent: '', description: '', durationMins: 0,
     order: 0, isPremium: false,
   })
@@ -130,8 +132,10 @@ function LessonModal({ initial, courseId, onSave, onClose }) {
     <div className="modal-overlay">
       <div className="modal" style={{ width: 500 }}>
         <h2 style={{ marginBottom: 16 }}>{initial ? 'Edit Lesson' : 'New Lesson'}</h2>
-        <label className="form-label">Title *</label>
+        <label className="form-label">Title (English) *</label>
         <input className="input" value={form.title} onChange={set('title')} placeholder="e.g. Introduction to Number Series" />
+        <label className="form-label" style={{ marginTop: 12 }}>Title (Hindi)</label>
+        <input className="input" value={form.titleHi || ''} onChange={set('titleHi')} placeholder="जैसे, संख्या श्रृंखला का परिचय" />
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <label className="form-label">Type</label>
@@ -410,12 +414,14 @@ function ChaptersPanel({ adminToken, course, onBack }) {
 }
 
 function ChapterForm({ initial, onSave, onClose }) {
-  const [form, setForm] = useState(initial ?? { title: '', description: '', order: 0, isPremium: false })
+  const [form, setForm] = useState(initial ?? { title: '', titleHi: '', description: '', order: 0, isPremium: false })
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
   return (
     <>
-      <label className="form-label">Title *</label>
+      <label className="form-label">Title (English) *</label>
       <input className="input" value={form.title} onChange={set('title')} placeholder="e.g. Chapter 1: Intro" />
+      <label className="form-label">Title (Hindi)</label>
+      <input className="input" value={form.titleHi || ''} onChange={set('titleHi')} placeholder="जैसे, अध्याय 1: परिचय" />
       <label className="form-label">Description</label>
       <input className="input" value={form.description} onChange={set('description')} />
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>

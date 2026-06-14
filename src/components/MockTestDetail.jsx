@@ -3,7 +3,7 @@ import { listQuestions, addQuestion, updateQuestion, deleteQuestion, reorderQues
 import QuestionEditorModal from './QuestionEditorModal.jsx'
 import Icon from './Icons.jsx'
 
-const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge']
+const SUBJECTS = ['Mathematics', 'English', 'Hindi', 'Reasoning', 'General']
 const CLASS_LEVELS = [
   { value: '6', label: 'Class 6' },
   { value: '7', label: 'Class 7' },
@@ -215,10 +215,12 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
                     <span className={diff.className}>{diff.label}</span>
                     {q.subject && <span className="badge badge-gray">{q.subject}</span>}
                     {q.isPYQ && q.examYear && <span className="badge badge-blue">PYQ {q.examYear}</span>}
-                    {q.isPremium && <span className="badge badge-premium"><Icon name="crown" size={12} /></span>}
                   </div>
 
                   <p style={{ margin: 0, fontSize: 15, fontWeight: 500, lineHeight: 1.6 }}>{q.text}</p>
+                  {q.textHi && (
+                    <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--muted)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{q.textHi}</p>
+                  )}
                   {q.imageUrl && (
                     <img src={getImageUrl(q.imageUrl)} alt="Question" style={{ marginTop: 10, maxWidth: '100%', maxHeight: 160, borderRadius: 8, border: '1px solid var(--border)', objectFit: 'contain' }} />
                   )}
@@ -281,7 +283,7 @@ export default function MockTestDetail({ adminToken, test, onBack }) {
           onSave={handleSave}
           onClose={() => { setEditorOpen(false); setEditingQuestion(null) }}
           adminToken={adminToken}
-          features={{ subject: true }}
+          features={{ subject: true, hindi: true }}
           subjects={SUBJECTS}
           classLevels={CLASS_LEVELS}
           contextLabel={`Mock test · ${test.title}`}

@@ -4,7 +4,7 @@ import Icon from './Icons.jsx'
 
 const CLASS_LEVELS = ['6', '7', '8', '9', 'both']
 const SUBJECTS = ['Mathematics', 'Science', 'Social Science', 'English', 'Hindi', 'General Knowledge']
-const EMPTY_FORM = { title: '', subject: '', duration: '', classLevel: '6', isPremium: false }
+const EMPTY_FORM = { title: '', titleHi: '', subject: '', duration: '', classLevel: '6', isPremium: false }
 
 export default function Dashboard({ adminToken, onSelectTest }) {
   const [tests, setTests] = useState([])
@@ -53,6 +53,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
     setEditingTest(test)
     setForm({
       title: test.title,
+      titleHi: test.titleHi || '',
       subject: test.subject,
       duration: String(test.duration),
       classLevel: test.classLevel,
@@ -73,6 +74,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
     try {
       const payload = {
         title: form.title,
+        titleHi: form.titleHi,
         subject: form.subject,
         duration: parseInt(form.duration),
         classLevel: form.classLevel,
@@ -242,7 +244,7 @@ export default function Dashboard({ adminToken, onSelectTest }) {
 
             <form onSubmit={handleSubmitForm}>
               <div className="form-group">
-                <label className="form-label">Test title</label>
+                <label className="form-label">Test title (English)</label>
                 <input
                   className="input"
                   value={form.title}
@@ -250,6 +252,16 @@ export default function Dashboard({ adminToken, onSelectTest }) {
                   placeholder="e.g. Class 6 Mathematics Full Test"
                   required
                   autoFocus
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Test title (Hindi)</label>
+                <input
+                  className="input"
+                  value={form.titleHi || ''}
+                  onChange={e => setForm(f => ({ ...f, titleHi: e.target.value }))}
+                  placeholder="जैसे, कक्षा 6 गणित पूर्ण टेस्ट"
                 />
               </div>
 
